@@ -1,0 +1,117 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Arial;}}
+\fs22
+\b AI Resume Analyzer – Full Software Documentation\b0\par
+Version: 1.0.0\par
+Date: 2025-10-09\par
+Project: AI Resume Analyzer for Recruiters\par
+\par
+\b Executive Summary\b0\par
+AI Resume Analyzer streamlines recruitment by parsing resumes, anonymizing PII, matching skills to job descriptions, and ranking candidates. It is a full-stack app with a React + Vite + TypeScript frontend and a Node.js + Express backend using MongoDB, Supabase auth, and Google Gemini for AI analysis.\par
+\par
+\b Table of Contents\b0\par
+1. Introduction\par
+2. System Overview\par
+3. Architecture\par
+4. Tech Stack\par
+5. Repository Structure\par
+6. Environments & Configuration\par
+7. Setup & Installation\par
+8. Data Models\par
+9. API Specification\par
+10. Processing Flow\par
+11. Security & Privacy\par
+12. Error Handling & Logging\par
+13. Testing Strategy\par
+14. Performance & Scalability\par
+15. Deployment\par
+16. CI/CD (Guidance)\par
+17. Coding Standards & Conventions\par
+18. Troubleshooting\par
+19. Roadmap\par
+20. Glossary\par
+\par
+\b 1. Introduction\b0\par
+This document covers architecture, configuration, data models, APIs, and operations for developers and operators.\par
+\par
+\b 2. System Overview\b0\par
+- Supabase authentication.\par
+- Create job descriptions with must-have skills and focus areas.\par
+- Upload resumes (PDF/DOC/DOCX); server extracts text and triggers AI.\par
+- Gemini returns JSON-only analysis; server validates, redacts PII, stores results.\par
+- Candidates per job exposed via REST API.\par
+\par
+\b 3. Architecture\b0\par
+Frontend: React (Vite, TS) SPA.\par
+Backend: Express 5, Multer, pdf-parse, mammoth, Mongoose, Gemini SDK, Supabase JS.\par
+Auth: Supabase JWT verified in middleware.\par
+Data: MongoDB collections for JobDescription and Resume.\par
+Async: Analysis triggered after upload; status tracked in DB.\par
+\par
+\b 4. Tech Stack\b0\par
+Frontend: React 19, TS, Router, Tailwind, Radix, Zod, RHF.\par
+Backend: Node, Express 5, Mongoose 8, Multer, pdf-parse, mammoth, Supabase, Gemini.\par
+DB: MongoDB. Testing: Jest, Supertest, mongodb-memory-server.\par
+\par
+\b 5. Repository Structure\b0\par
+server/: config/, models/, controllers/, routes/, services/, utils/, middleware/, tests.\par
+client/: src/ (services, contexts, pages, components, lib).\par
+\par
+\b 6. Environments & Configuration\b0\par
+Server .env: PORT, MONGO_URI, SUPABASE_URL, SUPABASE_ANON_KEY, GEMINI_API_KEY.\par
+Client .env: VITE_API_BASE_URL, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY.\par
+\par
+\b 7. Setup & Installation\b0\par
+Server: npm install; configure .env; npm run dev.\par
+Client: npm install; configure .env; npm run dev.\par
+\par
+\b 8. Data Models\b0\par
+JobDescription: userId, title, descriptionText, mustHaveSkills[], focusAreas[], timestamps.\par
+Resume: userId, jobId, originalFilename, fileType, uploadTimestamp, processingStatus, extractedText, geminiAnalysis, score, errorDetails, timestamps.\par
+\par
+\b 9. API Specification\b0\par
+Auth:\par
+- POST /api/auth/signup\par
+- POST /api/auth/login\par
+- GET /api/auth/user\par
+- POST /api/auth/logout\par
+Jobs:\par
+- POST /api/jobs, GET /api/jobs\par
+- GET/PUT/DELETE /api/jobs/:id\par
+Resumes:\par
+- POST /api/resumes/upload (multipart: jobId, resumeFile)\par
+- GET /api/resumes/job/:jobId/candidates\par
+\par
+\b 10. Processing Flow\b0\par
+Upload -> Extract -> Save -> Trigger -> Prompt -> AI -> Parse -> PII Scan -> Save -> List candidates.\par
+\par
+\b 11. Security & Privacy\b0\par
+Supabase JWT auth; CORS; upload type/size limits; strict JSON-only prompt; server-side PII redaction/warnings; owner scoping; secrets in env.\par
+\par
+\b 12. Error Handling & Logging\b0\par
+HTTP status codes + messages; retries and block handling for Gemini; error status persisted on Resume.\par
+\par
+\b 13. Testing Strategy\b0\par
+Jest + Supertest; in-memory Mongo; tests for geminiService and resume routes.\par
+\par
+\b 14. Performance & Scalability\b0\par
+Async processing; DB indexes; consider queue workers; tune model; external file storage.\par
+\par
+\b 15. Deployment\b0\par
+Backend Node service with env; frontend static build; HTTPS; set VITE_API_BASE_URL; add healthcheck.\par
+\par
+\b 16. CI/CD (Guidance)\b0\par
+Run server tests; build client; enforce lint; deploy backend then frontend.\par
+\par
+\b 17. Coding Standards & Conventions\b0\par
+Typed client; JSDoc server; thin controllers; services/middleware for reuse; input validation.\par
+\par
+\b 18. Troubleshooting\b0\par
+401: token missing/invalid. Gemini errors: key or policy block. Extraction empty: file type/content. Mongo: URI. CORS: origins.\par
+\par
+\b 19. Roadmap\b0\par
+Queue/worker, richer PII checks, admin dashboards, exports, job-specific prompts.\par
+\par
+\b 20. Glossary\b0\par
+PII, Supabase, Gemini, Multer.\par
+}
