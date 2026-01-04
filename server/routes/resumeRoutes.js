@@ -1,14 +1,17 @@
 // server/routes/resumeRoutes.js
 const express = require('express');
-const { uploadResume , getCandidatesForJob } = require('../controllers/resumeController');
+const { uploadResume, getCandidatesForJob } = require('../controllers/resumeController');
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware'); // Multer instance
+const { uploadLimiter } = require('../middleware/rateLimitMiddleware');
 
 const router = express.Router();
 
 // Single file upload, field name in form-data should be 'resumeFile'
+// Apply rate limiting to prevent abuse of AI analysis and storage
 router.post(
     '/upload',
+    uploadLimiter, // Rate limit uploads
     protect, // Ensure user is authenticated
     upload.single('resumeFile'), // Multer middleware for single file
     uploadResume

@@ -8,11 +8,12 @@ const {
   deleteJob,
 } = require('../controllers/jobController');
 const { protect } = require('../middleware/authMiddleware');
+const { jobLimiter } = require('../middleware/rateLimitMiddleware');
 
 const router = express.Router();
 
 router.route('/')
-  .post(protect, createJob)
+  .post(protect, jobLimiter, createJob) // Rate limit job creation
   .get(protect, getJobs);
 
 router.route('/:id')
