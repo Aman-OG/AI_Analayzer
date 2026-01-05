@@ -5,26 +5,57 @@ const Resume = require('../models/ResumeModel');
 const JobDescription = require('../models/JobDescriptionModel'); // Add this
 const { extractTextFromBuffer } = require('../utils/resumeParser');
 const { triggerGeminiAnalysis } = require('../services/geminiService'); // Import this
+const { validateResumeFile, checkForMaliciousContent } = require('../utils/fileValidator');
 
 // @desc    Upload a resume, extract text, and save metadata
 // @route   POST /api/resumes/upload
 // @access  Private (requires authentication)
 const uploadResume = async (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ message: 'No file uploaded.' });
+    return res.status(400).json({
+      error: 'No file uploaded',
+      message: 'No file uploaded.'
+    });
   }
 
   const { jobId } = req.body;
 
   if (!jobId) {
-    return res.status(400).json({ message: 'Job ID is required.' });
+    return res.status(400).json({
+      error: 'Missing job ID',
+      message: 'Job ID is required.'
+    });
   }
 
   try {
-    // Validate if jobId exists and belongs to the user (optional, but good practice)
+    // Validate if jobId exists and belongs to the user
     const jobExists = await JobDescription.findOne({ _id: jobId, userId: req.user.id });
     if (!jobExists) {
-        return res.status(404).json({ message: 'Job description not found or you are not authorized for this job.' });
+      return res.status(404).json({
+        error: 'Job not found',
+        message: 'Job description not found or you are not authorized for this job.'
+      });
+    }
+
+    // COMPREHENSIVE FILE VALIDATION
+    // 1. Validate file structure, size, extension, MIME type, and signature
+    const fileValidation = validateResumeFile(req.file);
+    if (!fileValidation.isValid) {
+      console.warn(`[Security] File validation failed for ${req.file.originalname}: ${fileValidation.error}`);
+      return res.status(400).json({
+        error: 'Invalid file',
+        message: fileValidation.error,
+      });
+    }
+
+    // 2. Check for malicious content
+    const maliciousCheck = checkForMaliciousContent(req.file.buffer);
+    if (!maliciousCheck.isValid) {
+      console.error(`[Security Alert] Malicious content detected in ${req.file.originalname} from user ${req.user.id}`);
+      return res.status(400).json({
+        error: 'Security violation',
+        message: maliciousCheck.error,
+      });
     }
 
     const userId = req.user.id;
@@ -32,16 +63,24 @@ const uploadResume = async (req, res) => {
     const mimeType = req.file.mimetype;
     const originalFilename = req.file.originalname;
 
+    // Extract text from validated file
     let extractedText;
     try {
-        extractedText = await extractTextFromBuffer(fileBuffer, mimeType);
+      extractedText = await extractTextFromBuffer(fileBuffer, mimeType);
     } catch (extractionError) {
-        console.error(`Text extraction failed for ${originalFilename}:`, extractionError);
-        return res.status(500).json({ message: 'Failed to extract text from file.', error: extractionError.message });
+      console.error(`Text extraction failed for ${originalFilename}:`, extractionError);
+      return res.status(500).json({
+        error: 'Extraction failed',
+        message: 'Failed to extract text from file.',
+        details: extractionError.message
+      });
     }
 
     if (!extractedText || extractedText.trim() === '') {
-        return res.status(400).json({ message: 'Could not extract any text from the resume or the resume is empty.' });
+      return res.status(400).json({
+        error: 'Empty file',
+        message: 'Could not extract any text from the resume or the resume is empty.'
+      });
     }
 
     const newResume = new Resume({
@@ -55,18 +94,14 @@ const uploadResume = async (req, res) => {
 
     await newResume.save();
 
-    // Trigger Gemini Analysis Asynchronously (fire and forget from the perspective of this request)
+    // Trigger Gemini Analysis Asynchronously
     triggerGeminiAnalysis(newResume._id)
-        .then(() => {
-            console.log(`[ResumeController] Gemini analysis for ${newResume._id} initiated successfully.`);
-        })
-        .catch(err => {
-            // This catch is for errors in *initiating* the trigger, not the analysis itself.
-            // The analysis errors are handled within triggerGeminiAnalysis.
-            console.error(`[ResumeController] Failed to initiate Gemini analysis for ${newResume._id}:`, err);
-            // Optionally, update the resume status to 'error' here if initiation itself fails critically
-            // For now, logging is sufficient as triggerGeminiAnalysis handles its own state.
-        });
+      .then(() => {
+        console.log(`[ResumeController] Gemini analysis for ${newResume._id} initiated successfully.`);
+      })
+      .catch(err => {
+        console.error(`[ResumeController] Failed to initiate Gemini analysis for ${newResume._id}:`, err);
+      });
 
     res.status(201).json({
       message: 'Resume uploaded and text extracted. Analysis has been queued.',
@@ -76,12 +111,22 @@ const uploadResume = async (req, res) => {
   } catch (error) {
     console.error('Error processing resume upload:', error);
     if (error.name === 'ValidationError') {
-        return res.status(400).json({ message: 'Validation Error', errors: error.errors });
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Validation Error',
+        errors: error.errors
+      });
     }
-    if (error.kind === 'ObjectId' && error.path === '_id' && error.value === jobId) { // For jobId validation
-        return res.status(400).json({ message: 'Invalid Job ID format.' });
+    if (error.kind === 'ObjectId' && error.path === '_id' && error.value === jobId) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+        message: 'Invalid Job ID format.'
+      });
     }
-    res.status(500).json({ message: 'Server error during resume upload.' });
+    res.status(500).json({
+      error: 'Server error',
+      message: 'Server error during resume upload.'
+    });
   }
 };
 
@@ -94,60 +139,60 @@ const getCandidatesForJob = async (req, res) => {
   const userId = req.user.id;
 
   try {
-      // 1. Validate Job Ownership
-      const job = await JobDescription.findById(jobId);
-      if (!job) {
-          return res.status(404).json({ message: 'Job not found.' });
-      }
-      if (job.userId.toString() !== userId) {
-          return res.status(403).json({ message: 'You are not authorized to view candidates for this job.' });
-      }
+    // 1. Validate Job Ownership
+    const job = await JobDescription.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found.' });
+    }
+    if (job.userId.toString() !== userId) {
+      return res.status(403).json({ message: 'You are not authorized to view candidates for this job.' });
+    }
 
-      // 2. Fetch Processed Resumes for this Job
-      const candidates = await Resume.find({
-          jobId: jobId,
-          processingStatus: 'completed', // Only fetch completed ones
-      })
+    // 2. Fetch Processed Resumes for this Job
+    const candidates = await Resume.find({
+      jobId: jobId,
+      processingStatus: 'completed', // Only fetch completed ones
+    })
       .sort({ score: -1 }) // Sort by score, highest first
       .select('_id originalFilename uploadTimestamp score geminiAnalysis.skills geminiAnalysis.yearsExperience geminiAnalysis.education geminiAnalysis.justification geminiAnalysis.warnings processingStatus fileType') // Select specific fields to return
       .lean(); // Use .lean() for faster queries if not modifying docs
 
-      if (!candidates || candidates.length === 0) {
-          return res.status(200).json([]); // Return empty array if no candidates yet
-      }
+    if (!candidates || candidates.length === 0) {
+      return res.status(200).json([]); // Return empty array if no candidates yet
+    }
 
-      // 3. Calculate Top Performers (e.g., top 10% or top N)
-      // For simplicity, let's flag top 20% or at least 1 if few candidates
-      const numToFlag = Math.max(1, Math.ceil(candidates.length * 0.20));
+    // 3. Calculate Top Performers (e.g., top 10% or top N)
+    // For simplicity, let's flag top 20% or at least 1 if few candidates
+    const numToFlag = Math.max(1, Math.ceil(candidates.length * 0.20));
 
-      const processedCandidates = candidates.map((candidate, index) => {
-          // Construct the candidate object for the frontend
-          // Ensure NO PII is accidentally leaked from geminiAnalysis if not selected carefully.
-          // The .select() above should handle this, but double-check here.
-          return {
-              candidateId: candidate._id,
-              originalFilename: candidate.originalFilename, // For user reference, not PII itself
-              fileType: candidate.fileType,
-              uploadTimestamp: candidate.uploadTimestamp,
-              score: candidate.score,
-              skills: candidate.geminiAnalysis?.skills || [],
-              yearsExperience: candidate.geminiAnalysis?.yearsExperience || null,
-              education: candidate.geminiAnalysis?.education || [], // Anonymized by Gemini prompt
-              justification: candidate.geminiAnalysis?.justification || "No justification provided.",
-              warnings: candidate.geminiAnalysis?.warnings || [], // Warnings from our PII check or Gemini
-              isFlagged: index < numToFlag, // Flag top candidates
-              // DO NOT include full geminiAnalysis or extractedText here
-          };
-      });
+    const processedCandidates = candidates.map((candidate, index) => {
+      // Construct the candidate object for the frontend
+      // Ensure NO PII is accidentally leaked from geminiAnalysis if not selected carefully.
+      // The .select() above should handle this, but double-check here.
+      return {
+        candidateId: candidate._id,
+        originalFilename: candidate.originalFilename, // For user reference, not PII itself
+        fileType: candidate.fileType,
+        uploadTimestamp: candidate.uploadTimestamp,
+        score: candidate.score,
+        skills: candidate.geminiAnalysis?.skills || [],
+        yearsExperience: candidate.geminiAnalysis?.yearsExperience || null,
+        education: candidate.geminiAnalysis?.education || [], // Anonymized by Gemini prompt
+        justification: candidate.geminiAnalysis?.justification || "No justification provided.",
+        warnings: candidate.geminiAnalysis?.warnings || [], // Warnings from our PII check or Gemini
+        isFlagged: index < numToFlag, // Flag top candidates
+        // DO NOT include full geminiAnalysis or extractedText here
+      };
+    });
 
-      res.status(200).json(processedCandidates);
+    res.status(200).json(processedCandidates);
 
   } catch (error) {
-      console.error(`Error fetching candidates for job ${jobId}:`, error);
-      if (error.kind === 'ObjectId') {
-          return res.status(404).json({ message: 'Invalid Job ID format.' });
-      }
-      res.status(500).json({ message: 'Server error fetching candidates.' });
+    console.error(`Error fetching candidates for job ${jobId}:`, error);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Invalid Job ID format.' });
+    }
+    res.status(500).json({ message: 'Server error fetching candidates.' });
   }
 };
 

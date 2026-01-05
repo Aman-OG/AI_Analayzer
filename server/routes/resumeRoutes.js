@@ -3,6 +3,7 @@ const express = require('express');
 const { uploadResume, getCandidatesForJob } = require('../controllers/resumeController');
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware'); // Multer instance
+const { handleMulterError } = require('../middleware/uploadMiddleware');
 const { uploadLimiter } = require('../middleware/rateLimitMiddleware');
 
 const router = express.Router();
@@ -14,6 +15,7 @@ router.post(
     uploadLimiter, // Rate limit uploads
     protect, // Ensure user is authenticated
     upload.single('resumeFile'), // Multer middleware for single file
+    handleMulterError, // Handle multer-specific errors
     uploadResume
 );
 
