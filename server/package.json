@@ -5,11 +5,14 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "pretest": "echo 'Running tests...' && node -e \"console.log('Node version:', process.version)\"",
     "test": "jest --coverage --detectOpenHandles",
     "test:watch": "jest --watch --detectOpenHandles",
     "test:unit": "jest --testPathIgnorePatterns=integration --coverage",
     "test:integration": "jest --testPathPattern=integration",
-    "test:verbose": "jest --verbose --detectOpenHandles"
+    "test:verbose": "jest --verbose --detectOpenHandles",
+    "test:ci": "jest --coverage --ci --maxWorkers=2",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
   },
   "keywords": [],
   "author": "",
