@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import jobService from '@/services/jobService'; // Assume this service exists
-import type { JobDescription } from '../types'; // Assume this type exists
+import jobService from '@/services/jobService';
+import type { JobDescription } from '../types';
 import {
   Card,
   CardContent,
@@ -17,17 +17,19 @@ import {
   Info,
   UploadCloud,
   Users,
-  Briefcase, // For Job Title section
-  CalendarDays, // For Posted Date
-  FileText as FileTextIcon, // For Description
-  ListChecks, // For Must-Have Skills
-  Target, // For Key Focus Areas
+  Briefcase,
+  CalendarDays,
+  FileText as FileTextIcon,
+  ListChecks,
+  Target,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import ResumeUploadForm from './ResumeUploadForm'; // Assume this component exists
-import CandidateList from '@/components/CandidateList'; // Assume this component exists and is styled
+import ResumeUploadForm from './ResumeUploadForm';
+import CandidateList from '@/components/CandidateList';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator'; // For visual separation
+import { Separator } from '@/components/ui/separator';
+import { CardSkeleton } from '@/components/Loading';
+import { useError } from '@/contexts/ErrorContext';
 
 
 export default function JobDetailPage() {
@@ -36,6 +38,7 @@ export default function JobDetailPage() {
   const [isLoadingJob, setIsLoadingJob] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { showError } = useError();
 
   const fetchJobDetails = useCallback(() => {
     if (!jobId) {
@@ -53,12 +56,12 @@ export default function JobDetailPage() {
         setJob(data);
       })
       .catch((err) => {
-        console.error('Failed to fetch job details:', err);
-        setError(err.message || 'Failed to load job details. The job may not exist or there was a network issue.');
+        showError(err, { jobId });
+        setError(err.message || 'Failed to load job details.');
         setJob(null); // Ensure job is null on error
       })
       .finally(() => setIsLoadingJob(false));
-  }, [jobId]);
+  }, [jobId, showError]);
 
   useEffect(() => {
     fetchJobDetails();
@@ -67,32 +70,32 @@ export default function JobDetailPage() {
   const handleResumeUploaded = () => {
     toast.success('Resume Uploaded & Analysis Started', {
       description: 'The candidate list will refresh automatically with new results shortly.',
-      duration: 5000, // Keep toast a bit longer
-      action: {
-        label: 'Got it',
-        onClick: () => { /* Sonner handles dismissal */ },
-      },
+      duration: 5000,
     });
-    // Simulate analysis time before triggering refresh
-    // In a real app, this might be an event from a backend or polling
+    // The refresh will happen via polling in ResumeUploadForm, but we also refresh the list here
     setTimeout(() => {
       setRefreshTrigger((prev) => prev + 1);
-    }, 5000); // Increased delay to simulate analysis
+    }, 2000);
   };
+
 
   if (isLoadingJob) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50 p-4">
-        <Loader2 className="h-12 w-12 animate-spin text-violet-600 mb-4" />
-        <p className="text-lg text-gray-600">Loading Job Details...</p>
+      <div className="container mx-auto max-w-5xl py-8 px-4 space-y-10">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Loading job details...</span>
+        </div>
+        <CardSkeleton count={2} showHeader showFooter={false} />
       </div>
     );
   }
 
+
   if (error || !job) { // Combined error and no-job state for cleaner logic
     return (
       <div className="container mx-auto max-w-2xl py-10 px-4 text-center">
-         <Alert variant={error ? "destructive" : "default"} className="text-left">
+        <Alert variant={error ? "destructive" : "default"} className="text-left">
           <Info className={`h-5 w-5 ${error ? 'text-red-500' : 'text-blue-500'}`} />
           <AlertTitle className="font-semibold">
             {error ? 'Error Loading Job' : 'Job Not Found'}

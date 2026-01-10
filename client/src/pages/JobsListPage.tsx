@@ -60,16 +60,11 @@ import {
   FileText, // For "View Details"
   // Edit3, // For "Edit" if you add that functionality
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-// import { Badge } from '@/components/ui/badge'; // Removed as 'status' field might not exist
+import { TableSkeleton } from '@/components/Loading';
+import { useError } from '@/contexts/ErrorContext';
+import { ValidationError } from '@/lib/errors';
 
 const JobsListPage = () => {
   const [jobs, setJobs] = useState<JobDescription[]>([]);
@@ -78,6 +73,7 @@ const JobsListPage = () => {
   const [isCreateJobDialogOpen, setIsCreateJobDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<JobDescription | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { showError } = useError();
 
   const navigate = useNavigate();
 
@@ -88,9 +84,7 @@ const JobsListPage = () => {
       const data = await jobService.getAllJobs();
       setJobs(data);
     } catch (error: any) {
-      console.error("Failed to fetch jobs:", error);
-      const msg = error?.response?.data?.message || error.message || "Could not load jobs.";
-      toast.error("Error Loading Jobs", { description: msg });
+      showError(error);
     } finally {
       setIsLoading(false);
     }
@@ -103,8 +97,6 @@ const JobsListPage = () => {
   // Create job handler
   const handleCreateJobSubmit = async (formData: JobFormData) => {
     setIsFormLoading(true);
-    // Assuming JobFormData directly maps or your JobForm handles the structure for CreateJobData
-    // The original code had this structure:
     const createData: CreateJobData = {
       title: formData.title,
       descriptionText: formData.descriptionText,
@@ -123,12 +115,7 @@ const JobsListPage = () => {
       setIsCreateJobDialogOpen(false);
       fetchJobs(); // Refresh the list
     } catch (error: any) {
-      console.error("Failed to create job:", error);
-      const msg =
-        error?.response?.data?.message ||
-        error.message ||
-        "Something went wrong while creating the job.";
-      toast.error("Create Failed", { description: msg });
+      showError(error);
     } finally {
       setIsFormLoading(false);
     }
@@ -146,32 +133,17 @@ const JobsListPage = () => {
       setJobToDelete(null);
       fetchJobs(); // Refresh the list
     } catch (error: any) {
-      console.error("Failed to delete job:", error);
-      const msg =
-        error?.response?.data?.message ||
-        error.message ||
-        "Something went wrong while deleting the job.";
-      toast.error("Delete Failed", { description: msg });
+      showError(error, { jobId: jobToDelete._id });
     } finally {
       setIsFormLoading(false);
     }
   };
 
+
   // Filtered jobs based on search term
   const filteredJobs = jobs.filter(job =>
     job.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Loading state UI
-  if (isLoading) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 text-slate-700 p-6">
-        <Loader2 className="h-16 w-16 animate-spin text-indigo-600 mb-6" />
-        <p className="text-xl font-medium text-slate-600">Loading Job Postings...</p>
-        <p className="text-sm text-slate-500">Please wait a moment.</p>
-      </div>
-    );
-  }
 
   // Main page content
   return (
@@ -225,11 +197,11 @@ const JobsListPage = () => {
                     onSubmit={handleCreateJobSubmit}
                     isLoading={isFormLoading}
                     // Ensure your JobForm accepts these props or adapt as needed
-                    submitButtonText="Publish Job" 
+                    submitButtonText="Publish Job"
                     onCancel={() => setIsCreateJobDialogOpen(false)}
                   />
                 </div>
-                
+
                 <DialogClose className="absolute right-4 top-4 p-1.5 rounded-full hover:bg-slate-100 transition-colors">
                   <X className="h-5 w-5 text-slate-500" />
                   <span className="sr-only">Close</span>
@@ -240,7 +212,7 @@ const JobsListPage = () => {
         </header>
 
         {/* Search and Filters */}
-        {jobs.length > 0 && (
+        {(jobs.length > 0 || isLoading) && (
           <div className="mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -250,13 +222,22 @@ const JobsListPage = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full md:w-1/2 lg:w-1/3 pl-10 pr-4 py-2.5 rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm"
+                disabled={isLoading}
               />
             </div>
           </div>
         )}
 
-        {/* Empty State or Jobs Table */}
-        {filteredJobs.length === 0 && !isLoading ? (
+        {isLoading ? (
+          <Card className="shadow-xl border-slate-200 bg-white rounded-xl overflow-hidden p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+              <span className="text-sm text-slate-500">Retrieving job postings...</span>
+            </div>
+            <TableSkeleton rows={8} columns={3} />
+          </Card>
+        ) : filteredJobs.length === 0 ? (
+
           <Card className="text-center shadow-lg border-slate-200 bg-white rounded-xl overflow-hidden">
             <CardHeader className="pt-12 pb-8 bg-slate-50">
               <Briefcase className="mx-auto h-20 w-20 text-indigo-300 mb-4" />
@@ -276,13 +257,13 @@ const JobsListPage = () => {
                 Once you add jobs, they’ll appear here. Let's build your team!
               </p>
             </CardContent>
-             {!searchTerm && (
-                <CardFooter className="pb-10 pt-0 flex justify-center">
-                     <Button size="lg" onClick={() => setIsCreateJobDialogOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg px-6 py-3">
-                        <PlusCircle className="mr-2 h-5 w-5" />
-                        Create Your First Job
-                    </Button>
-                </CardFooter>
+            {!searchTerm && (
+              <CardFooter className="pb-10 pt-0 flex justify-center">
+                <Button size="lg" onClick={() => setIsCreateJobDialogOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg px-6 py-3">
+                  <PlusCircle className="mr-2 h-5 w-5" />
+                  Create Your First Job
+                </Button>
+              </CardFooter>
             )}
           </Card>
         ) : (
@@ -359,17 +340,17 @@ const JobsListPage = () => {
                     ))}
                   </TableBody>
                   {filteredJobs.length > 5 && (
-                     <TableCaption className="py-4 text-sm text-slate-500">
-                        End of job list. {jobs.length} total postings.
+                    <TableCaption className="py-4 text-sm text-slate-500">
+                      End of job list. {jobs.length} total postings.
                     </TableCaption>
                   )}
                 </Table>
               </div>
             </CardContent>
-             {filteredJobs.length > 0 && (
-                <CardFooter className="px-6 py-4 border-t border-slate-200 text-sm text-slate-500">
-                    Showing {filteredJobs.length} of {jobs.length} job postings.
-                </CardFooter>
+            {filteredJobs.length > 0 && (
+              <CardFooter className="px-6 py-4 border-t border-slate-200 text-sm text-slate-500">
+                Showing {filteredJobs.length} of {jobs.length} job postings.
+              </CardFooter>
             )}
           </Card>
         )}
@@ -405,7 +386,7 @@ const JobsListPage = () => {
             </AlertDialogHeader>
             <AlertDialogFooter className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
               <AlertDialogCancel asChild>
-                  <Button variant="outline" onClick={() => setJobToDelete(null)} disabled={isFormLoading}>Cancel</Button>
+                <Button variant="outline" onClick={() => setJobToDelete(null)} disabled={isFormLoading}>Cancel</Button>
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteJob}

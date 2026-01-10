@@ -21,8 +21,10 @@ import {
 } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Star, AlertCircle, RefreshCcw, Loader2, ChevronDown } from 'lucide-react';
+import { Star, AlertCircle, RefreshCcw, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TableSkeleton } from '@/components/Loading';
+import { useError } from '@/contexts/ErrorContext';
 
 interface CandidateListProps {
   jobId: string;
@@ -33,6 +35,7 @@ export default function CandidateList({ jobId, refreshTrigger }: CandidateListPr
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showError } = useError();
 
   const fetchCandidates = useCallback(async () => {
     if (!jobId) return;
@@ -42,12 +45,13 @@ export default function CandidateList({ jobId, refreshTrigger }: CandidateListPr
       const data = await resumeService.getCandidatesForJob(jobId);
       setCandidates(data);
     } catch (err: any) {
-      console.error('Failed to fetch candidates:', err);
+      showError(err, { jobId });
       setError(err.message || 'Could not load candidates.');
     } finally {
       setIsLoading(false);
     }
-  }, [jobId]);
+  }, [jobId, showError]);
+
 
   useEffect(() => {
     fetchCandidates();
@@ -70,20 +74,9 @@ export default function CandidateList({ jobId, refreshTrigger }: CandidateListPr
   };
 
   if (isLoading) {
-    return (
-      <div className="py-8">
-        <div className="flex items-center justify-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin text-violet-600" />
-          <span className="text-gray-500">Loading candidates...</span>
-        </div>
-        <div className="mt-4 space-y-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-12 bg-gray-200 rounded animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <TableSkeleton rows={5} columns={6} />;
   }
+
 
   if (error) {
     return (

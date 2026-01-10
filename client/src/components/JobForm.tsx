@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/form"; // Ensure 'form' component is added via shadcn
 import { Loader2 } from "lucide-react";
 
+import { useError } from '@/contexts/ErrorContext';
+import { ValidationError } from '@/lib/errors';
+
 interface JobFormProps {
   onSubmit: (data: JobFormData) => Promise<void>;
   initialData?: Partial<JobFormData>;
@@ -26,6 +29,7 @@ interface JobFormProps {
 }
 
 const JobForm = ({ onSubmit, initialData = {}, isLoading, submitButtonText = "Submit", onCancel }: JobFormProps) => {
+  const { showError } = useError();
   const form = useForm<JobFormData>({
     resolver: zodResolver(JobSchema),
     defaultValues: {
@@ -36,26 +40,26 @@ const JobForm = ({ onSubmit, initialData = {}, isLoading, submitButtonText = "Su
     },
   });
 
-  // If initialData changes (e.g., when opening an edit form), reset the form
-  // useEffect(() => {
-  //   if (initialData) {
-  //     form.reset({
-  //       title: initialData.title || '',
-  //       descriptionText: initialData.descriptionText || '',
-  //       mustHaveSkills: Array.isArray(initialData.mustHaveSkills) ? initialData.mustHaveSkills.join(', ') : initialData.mustHaveSkills || '',
-  //       focusAreas: Array.isArray(initialData.focusAreas) ? initialData.focusAreas.join(', ') : initialData.focusAreas || '',
-  //     });
-  //   }
-  // }, [initialData, form.reset]);
-
-
   const handleFormSubmit = async (data: JobFormData) => {
-    // The parent component (JobsListPage) will handle splitting the string skills/areas into arrays
-    await onSubmit(data);
+    try {
+      await onSubmit(data);
+    } catch (err: any) {
+      if (err instanceof ValidationError && err.errors) {
+        Object.entries(err.errors).forEach(([field, messages]) => {
+          form.setError(field as any, {
+            type: 'server',
+            message: Array.isArray(messages) ? messages[0] : (messages as string)
+          });
+        });
+      } else {
+        showError(err);
+      }
+    }
   };
 
   return (
     <Form {...form}> {/* Spread form methods here */}
+
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 md:space-y-6"> {/* Increased spacing */}
         <FormField
           control={form.control}
@@ -121,11 +125,11 @@ const JobForm = ({ onSubmit, initialData = {}, isLoading, submitButtonText = "Su
           )}
         />
         <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-2 space-y-2 sm:space-y-0 pt-2">
-            {onCancel && (
-                 <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
-                    Cancel
-                </Button>
-            )}
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+              Cancel
+            </Button>
+          )}
           <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLoading ? 'Saving...' : submitButtonText}

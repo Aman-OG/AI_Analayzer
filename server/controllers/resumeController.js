@@ -197,8 +197,43 @@ const getCandidatesForJob = async (req, res) => {
 };
 
 
+// @desc    Get status of a specific resume
+// @route   GET /api/resumes/:resumeId/status
+// @access  Private
+const getResumeStatus = async (req, res) => {
+  const { resumeId } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const resume = await Resume.findById(resumeId);
+    if (!resume) {
+      return res.status(404).json({ message: 'Resume not found.' });
+    }
+
+    if (resume.userId.toString() !== userId) {
+      return res.status(403).json({ message: 'You are not authorized to view this resume.' });
+    }
+
+    res.status(200).json({
+      resumeId: resume._id,
+      processingStatus: resume.processingStatus,
+      errorDetails: resume.errorDetails,
+      score: resume.score,
+      originalFilename: resume.originalFilename,
+    });
+  } catch (error) {
+    console.error(`Error fetching resume status for ${resumeId}:`, error);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Invalid resume ID format.' });
+    }
+    res.status(500).json({ message: 'Server error fetching resume status.' });
+  }
+};
+
+
 module.exports = {
   uploadResume,
   getCandidatesForJob,
+  getResumeStatus,
   // other resume controllers if any
 };

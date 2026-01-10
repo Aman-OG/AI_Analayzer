@@ -1,6 +1,10 @@
 // server/routes/resumeRoutes.js
 const express = require('express');
-const { uploadResume, getCandidatesForJob } = require('../controllers/resumeController');
+const {
+    uploadResume,
+    getCandidatesForJob,
+    getResumeStatus
+} = require('../controllers/resumeController');
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware'); // Multer instance
 const { handleMulterError } = require('../middleware/uploadMiddleware');
@@ -27,4 +31,12 @@ router.get(
     getCandidatesForJob
 );
 
+// Route to check status of a specific resume
+router.get(
+    '/:resumeId/status',
+    protect,
+    getResumeStatus
+);
+
 module.exports = router;
+
