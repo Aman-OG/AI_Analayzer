@@ -68,7 +68,11 @@ const JobForm = ({ onSubmit, initialData = {}, isLoading, submitButtonText = "Su
             <FormItem>
               <FormLabel>Job Title <span className="text-destructive">*</span></FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Senior Software Engineer" {...field} />
+                <Input
+                  placeholder="e.g., Senior Software Engineer"
+                  {...field}
+                  aria-required="true"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -86,6 +90,7 @@ const JobForm = ({ onSubmit, initialData = {}, isLoading, submitButtonText = "Su
                   {...field}
                   rows={6} // Increased rows
                   className="min-h-[100px]"
+                  aria-required="true"
                 />
               </FormControl>
               <FormMessage />

@@ -157,63 +157,66 @@ export default function ResumeUploadForm({ jobId, onUploadSuccess }: ResumeUploa
                 onChange: handleFileChange
               })}
               disabled={isLoading || isValidating || isPolling}
+              aria-invalid={!!errors.resumeFile || !!validationError}
+              aria-describedby="file-upload-desc"
               className="block w-full text-sm text-muted-foreground
-                file:mr-4 file:py-2 file:px-4 file:rounded-full
-                file:border-0 file:text-sm file:font-semibold
-                file:bg-primary file:text-primary-foreground
-                hover:file:bg-primary/90 cursor-pointer
-                disabled:opacity-50 disabled:cursor-not-allowed h-auto py-2"
+                  file:mr-4 file:py-2 file:px-4 file:rounded-full
+                  file:border-0 file:text-sm file:font-semibold
+                  file:bg-primary file:text-primary-foreground
+                  hover:file:bg-primary/90 cursor-pointer
+                  disabled:opacity-50 disabled:cursor-not-allowed h-auto py-2"
             />
           </div>
 
-          {/* Validation in progress */}
-          {isValidating && (
-            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-1">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span>Validating file integrity...</span>
-            </div>
-          )}
-
-          {/* File info on successful validation */}
-          {fileInfo && !validationError && !isValidating && (
-            <div className="flex items-center gap-3 mt-3 p-3 bg-secondary/30 border border-secondary rounded-lg animate-in zoom-in-95">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <FileCheck className="h-4 w-4 text-primary" />
+          <div id="file-upload-status" aria-live="polite" className="mt-2">
+            {/* Validation in progress */}
+            {isValidating && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-1">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span>Validating file integrity...</span>
               </div>
-              <div className="overflow-hidden">
-                <p className="text-sm font-medium truncate">{fileInfo.name}</p>
-                <p className="text-xs text-muted-foreground">{fileInfo.size}</p>
+            )}
+
+            {/* File info on successful validation */}
+            {fileInfo && !validationError && !isValidating && (
+              <div className="flex items-center gap-3 p-3 bg-secondary/30 border border-secondary rounded-lg animate-in zoom-in-95">
+                <div className="bg-primary/10 p-2 rounded-full">
+                  <FileCheck className="h-4 w-4 text-primary" />
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-sm font-medium truncate">Selected: {fileInfo.name}</p>
+                  <p className="text-xs text-muted-foreground">{fileInfo.size}</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Validation error */}
-          {validationError && (
-            <div className="flex items-start gap-2 mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive animate-in shake">
-              <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <p className="text-xs font-medium">{validationError}</p>
-            </div>
-          )}
+            {/* Validation error */}
+            {validationError && (
+              <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive animate-in shake">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <p className="text-xs font-medium">{validationError}</p>
+              </div>
+            )}
 
-          {/* Form validation error */}
-          {errors.resumeFile && (
-            <p className="text-sm text-destructive mt-1 font-medium italic">
-              {errors.resumeFile.message}
-            </p>
-          )}
-        </div>
+            {/* Form validation error */}
+            {errors.resumeFile && (
+              <p className="text-sm text-destructive font-medium italic">
+                {errors.resumeFile.message}
+              </p>
+            )}
+          </div>
 
-        <Button
-          type="submit"
-          disabled={isLoading || isValidating || !!validationError || isPolling}
-          className="w-full sm:w-auto font-semibold shadow-md transition-all active:scale-[0.98]"
-        >
-          {isLoading
-            ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            : <UploadCloud className="mr-2 h-4 w-4" />
-          }
-          {isLoading ? 'Uploading...' : 'Upload & Analyze'}
-        </Button>
+          <Button
+            type="submit"
+            disabled={isLoading || isValidating || !!validationError || isPolling}
+            className="w-full sm:w-auto font-semibold shadow-md transition-all active:scale-[0.98]"
+          >
+            {isLoading
+              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              : <UploadCloud className="mr-2 h-4 w-4" />
+            }
+            {isLoading ? 'Uploading...' : 'Upload & Analyze'}
+          </Button>
       </form>
 
       {/* Real-time processing status */}

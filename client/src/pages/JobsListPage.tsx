@@ -148,7 +148,7 @@ const JobsListPage = () => {
   // Main page content
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 py-8 px-4 md:px-8 lg:px-12 border-1 border-gray-200 rounded-lg">
-      <div className="container mx-auto space-y-8">
+      <main className="container mx-auto space-y-8">
         {/* Header Section */}
         <header className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10 pb-6 border-b border-slate-200">
           <div className="flex items-center gap-4">
@@ -223,6 +223,7 @@ const JobsListPage = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full md:w-1/2 lg:w-1/3 pl-10 pr-4 py-2.5 rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm"
                 disabled={isLoading}
+                aria-label="Search job postings by title"
               />
             </div>
           </div>
@@ -402,7 +403,7 @@ const JobsListPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
+      </main>
     </div>
   );
 };
