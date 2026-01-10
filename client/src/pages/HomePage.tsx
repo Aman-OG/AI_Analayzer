@@ -37,14 +37,14 @@ export default function HomePage() {
     <div className="container mx-auto py-16 px-4 space-y-20">
       {/* Hero Section */}
       <section className="relative overflow-hidden text-center bg-gradient-to-br from-teal-50 via-indigo-50 to-purple-50 p-12 rounded-2xl shadow-2xl backdrop-blur-sm transition-transform duration-700 ease-in-out hover:scale-102">
-        <h1 className="text-6xl font-extrabold mb-6 text-gray-900 leading-tight">
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 text-gray-900 leading-tight px-2">
           Welcome,{' '}
           <span className="text-indigo-600 dark:text-teal-300">
             {user?.email || 'Guest'}
           </span>
           !
         </h1>
-        <p className="text-2xl text-gray-700 mb-8 max-w-3xl mx-auto">
+        <p className="text-lg md:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto px-4 leading-relaxed">
           Your ultimate platform to simplify hiring, from crafting perfect job
           descriptions to AI-powered candidate matching.
         </p>

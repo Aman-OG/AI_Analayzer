@@ -130,9 +130,9 @@ export default function JobDetailPage() {
       {/* Job Details Card */}
       <Card className="shadow-lg border-gray-200/80">
         <CardHeader className="border-b border-gray-100 pb-6">
-          <div className="flex items-center space-x-3 mb-1">
-            <Briefcase className="h-8 w-8 text-violet-600" />
-            <CardTitle className="text-3xl font-bold tracking-tight text-gray-800 sm:text-4xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 gap-2 mb-1">
+            <Briefcase className="h-8 w-8 text-violet-600 hidden sm:block" />
+            <CardTitle className="text-2xl font-bold tracking-tight text-gray-800 sm:text-4xl">
               {job.title}
             </CardTitle>
           </div>
