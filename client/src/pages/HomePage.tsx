@@ -107,7 +107,7 @@ export default function HomePage() {
           Dive in and explore all the powerful features designed to streamline
           your recruitment.
         </p>
-        <Link to="/dashboard">
+        <Link to="/jobs">
           <Button
             size="lg"
             className="px-10 py-4 text-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors duration-300"

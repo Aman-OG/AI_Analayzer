@@ -71,6 +71,10 @@ function App() {
                 path="*"
                 element={<RouteErrorBoundary />}
               />
+              <Route
+                path="/dashboard"
+                element={<Navigate to="/jobs" replace />}
+              />
             </Routes>
           </Layout>
         </Router>
