@@ -1,233 +1,168 @@
-
-
-// server/controllers/resumeController.js
 const Resume = require('../models/ResumeModel');
-const JobDescription = require('../models/JobDescriptionModel'); // Add this
+const JobDescription = require('../models/JobDescriptionModel');
 const { extractTextFromBuffer } = require('../utils/resumeParser');
-const { triggerGeminiAnalysis } = require('../services/geminiService'); // Import this
+const { triggerGeminiAnalysis } = require('../services/geminiService');
 const { validateResumeFile, checkForMaliciousContent } = require('../utils/fileValidator');
+const AppError = require('../utils/appError');
+const catchAsync = require('../utils/catchAsync');
 
 // @desc    Upload a resume, extract text, and save metadata
 // @route   POST /api/resumes/upload
 // @access  Private (requires authentication)
-const uploadResume = async (req, res) => {
+const uploadResume = catchAsync(async (req, res, next) => {
   if (!req.file) {
-    return res.status(400).json({
-      error: 'No file uploaded',
-      message: 'No file uploaded.'
-    });
+    return next(new AppError('No file uploaded.', 400));
   }
 
   const { jobId } = req.body;
 
   if (!jobId) {
-    return res.status(400).json({
-      error: 'Missing job ID',
-      message: 'Job ID is required.'
-    });
+    return next(new AppError('Job ID is required.', 400));
   }
 
+  // Validate if jobId exists and belongs to the user
+  const jobExists = await JobDescription.findOne({ _id: jobId, userId: req.user.id });
+  if (!jobExists) {
+    return next(new AppError('Job description not found or you are not authorized for this job.', 404));
+  }
+
+  // COMPREHENSIVE FILE VALIDATION
+  const fileValidation = validateResumeFile(req.file);
+  if (!fileValidation.isValid) {
+    console.warn(`[Security] File validation failed for ${req.file.originalname}: ${fileValidation.error}`);
+    return next(new AppError(fileValidation.error, 400));
+  }
+
+  const maliciousCheck = checkForMaliciousContent(req.file.buffer);
+  if (!maliciousCheck.isValid) {
+    console.error(`[Security Alert] Malicious content detected in ${req.file.originalname} from user ${req.user.id}`);
+    return next(new AppError(maliciousCheck.error, 400));
+  }
+
+  const userId = req.user.id;
+  const fileBuffer = req.file.buffer;
+  const mimeType = req.file.mimetype;
+  const originalFilename = req.file.originalname;
+
+  // Extract text from validated file
+  let extractedText;
   try {
-    // Validate if jobId exists and belongs to the user
-    const jobExists = await JobDescription.findOne({ _id: jobId, userId: req.user.id });
-    if (!jobExists) {
-      return res.status(404).json({
-        error: 'Job not found',
-        message: 'Job description not found or you are not authorized for this job.'
-      });
-    }
-
-    // COMPREHENSIVE FILE VALIDATION
-    // 1. Validate file structure, size, extension, MIME type, and signature
-    const fileValidation = validateResumeFile(req.file);
-    if (!fileValidation.isValid) {
-      console.warn(`[Security] File validation failed for ${req.file.originalname}: ${fileValidation.error}`);
-      return res.status(400).json({
-        error: 'Invalid file',
-        message: fileValidation.error,
-      });
-    }
-
-    // 2. Check for malicious content
-    const maliciousCheck = checkForMaliciousContent(req.file.buffer);
-    if (!maliciousCheck.isValid) {
-      console.error(`[Security Alert] Malicious content detected in ${req.file.originalname} from user ${req.user.id}`);
-      return res.status(400).json({
-        error: 'Security violation',
-        message: maliciousCheck.error,
-      });
-    }
-
-    const userId = req.user.id;
-    const fileBuffer = req.file.buffer;
-    const mimeType = req.file.mimetype;
-    const originalFilename = req.file.originalname;
-
-    // Extract text from validated file
-    let extractedText;
-    try {
-      extractedText = await extractTextFromBuffer(fileBuffer, mimeType);
-    } catch (extractionError) {
-      console.error(`Text extraction failed for ${originalFilename}:`, extractionError);
-      return res.status(500).json({
-        error: 'Extraction failed',
-        message: 'Failed to extract text from file.',
-        details: extractionError.message
-      });
-    }
-
-    if (!extractedText || extractedText.trim() === '') {
-      return res.status(400).json({
-        error: 'Empty file',
-        message: 'Could not extract any text from the resume or the resume is empty.'
-      });
-    }
-
-    const newResume = new Resume({
-      userId,
-      jobId, // Already validated
-      originalFilename,
-      fileType: mimeType,
-      extractedText,
-      processingStatus: 'uploaded',
-    });
-
-    await newResume.save();
-
-    // Trigger Gemini Analysis Asynchronously
-    triggerGeminiAnalysis(newResume._id)
-      .then(() => {
-        console.log(`[ResumeController] Gemini analysis for ${newResume._id} initiated successfully.`);
-      })
-      .catch(err => {
-        console.error(`[ResumeController] Failed to initiate Gemini analysis for ${newResume._id}:`, err);
-      });
-
-    res.status(201).json({
-      message: 'Resume uploaded and text extracted. Analysis has been queued.',
-      resumeId: newResume._id,
-    });
-
-  } catch (error) {
-    console.error('Error processing resume upload:', error);
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        error: 'Validation error',
-        message: 'Validation Error',
-        errors: error.errors
-      });
-    }
-    if (error.kind === 'ObjectId' && error.path === '_id' && error.value === jobId) {
-      return res.status(400).json({
-        error: 'Invalid ID',
-        message: 'Invalid Job ID format.'
-      });
-    }
-    res.status(500).json({
-      error: 'Server error',
-      message: 'Server error during resume upload.'
-    });
+    extractedText = await extractTextFromBuffer(fileBuffer, mimeType);
+  } catch (extractionError) {
+    console.error(`Text extraction failed for ${originalFilename}:`, extractionError);
+    return next(new AppError(`Failed to extract text from file: ${extractionError.message}`, 500));
   }
-};
 
+  if (!extractedText || extractedText.trim() === '') {
+    return next(new AppError('Could not extract any text from the resume or the resume is empty.', 400));
+  }
+
+  const newResume = new Resume({
+    userId,
+    jobId,
+    originalFilename,
+    fileType: mimeType,
+    extractedText,
+    processingStatus: 'uploaded',
+  });
+
+  await newResume.save();
+
+  // Trigger Gemini Analysis Asynchronously
+  triggerGeminiAnalysis(newResume._id)
+    .then(() => {
+      console.log(`[ResumeController] Gemini analysis for ${newResume._id} initiated successfully.`);
+    })
+    .catch(err => {
+      console.error(`[ResumeController] Failed to initiate Gemini analysis for ${newResume._id}:`, err);
+    });
+
+  res.status(201).json({
+    message: 'Resume uploaded and text extracted. Analysis has been queued.',
+    resumeId: newResume._id,
+  });
+});
 
 // @desc    Get processed candidates for a specific job
 // @route   GET /api/resumes/job/:jobId/candidates
 // @access  Private (user must own the job)
-const getCandidatesForJob = async (req, res) => {
+const getCandidatesForJob = catchAsync(async (req, res, next) => {
   const { jobId } = req.params;
   const userId = req.user.id;
 
-  try {
-    // 1. Validate Job Ownership
-    const job = await JobDescription.findById(jobId);
-    if (!job) {
-      return res.status(404).json({ message: 'Job not found.' });
-    }
-    if (job.userId.toString() !== userId) {
-      return res.status(403).json({ message: 'You are not authorized to view candidates for this job.' });
-    }
-
-    // 2. Fetch Processed Resumes for this Job
-    const candidates = await Resume.find({
-      jobId: jobId,
-      processingStatus: 'completed', // Only fetch completed ones
-    })
-      .sort({ score: -1 }) // Sort by score, highest first
-      .select('_id originalFilename uploadTimestamp score geminiAnalysis.skills geminiAnalysis.yearsExperience geminiAnalysis.education geminiAnalysis.justification geminiAnalysis.warnings processingStatus fileType') // Select specific fields to return
-      .lean(); // Use .lean() for faster queries if not modifying docs
-
-    if (!candidates || candidates.length === 0) {
-      return res.status(200).json([]); // Return empty array if no candidates yet
-    }
-
-    // 3. Calculate Top Performers (e.g., top 10% or top N)
-    // For simplicity, let's flag top 20% or at least 1 if few candidates
-    const numToFlag = Math.max(1, Math.ceil(candidates.length * 0.20));
-
-    const processedCandidates = candidates.map((candidate, index) => {
-      // Construct the candidate object for the frontend
-      // Ensure NO PII is accidentally leaked from geminiAnalysis if not selected carefully.
-      // The .select() above should handle this, but double-check here.
-      return {
-        candidateId: candidate._id,
-        originalFilename: candidate.originalFilename, // For user reference, not PII itself
-        fileType: candidate.fileType,
-        uploadTimestamp: candidate.uploadTimestamp,
-        score: candidate.score,
-        skills: candidate.geminiAnalysis?.skills || [],
-        yearsExperience: candidate.geminiAnalysis?.yearsExperience || null,
-        education: candidate.geminiAnalysis?.education || [], // Anonymized by Gemini prompt
-        justification: candidate.geminiAnalysis?.justification || "No justification provided.",
-        warnings: candidate.geminiAnalysis?.warnings || [], // Warnings from our PII check or Gemini
-        isFlagged: index < numToFlag, // Flag top candidates
-        // DO NOT include full geminiAnalysis or extractedText here
-      };
-    });
-
-    res.status(200).json(processedCandidates);
-
-  } catch (error) {
-    console.error(`Error fetching candidates for job ${jobId}:`, error);
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Invalid Job ID format.' });
-    }
-    res.status(500).json({ message: 'Server error fetching candidates.' });
+  // 1. Validate Job Ownership
+  const job = await JobDescription.findById(jobId);
+  if (!job) {
+    return next(new AppError('Job not found.', 404));
   }
-};
+  if (job.userId.toString() !== userId) {
+    return next(new AppError('You are not authorized to view candidates for this job.', 403));
+  }
 
+  // 2. Fetch Processed Resumes for this Job
+  const candidates = await Resume.find({
+    jobId: jobId,
+    processingStatus: 'completed',
+  })
+    .sort({ score: -1 })
+    .select('_id originalFilename uploadTimestamp score geminiAnalysis.skills geminiAnalysis.yearsExperience geminiAnalysis.education geminiAnalysis.justification geminiAnalysis.warnings processingStatus fileType')
+    .lean();
+
+  if (!candidates || candidates.length === 0) {
+    return res.status(200).json([]);
+  }
+
+  // 3. Calculate Top Performers
+  const numToFlag = Math.max(1, Math.ceil(candidates.length * 0.20));
+
+  const processedCandidates = candidates.map((candidate, index) => {
+    return {
+      candidateId: candidate._id,
+      originalFilename: candidate.originalFilename,
+      fileType: candidate.fileType,
+      uploadTimestamp: candidate.uploadTimestamp,
+      score: candidate.score,
+      skills: candidate.geminiAnalysis?.skills || [],
+      yearsExperience: candidate.geminiAnalysis?.yearsExperience || null,
+      education: candidate.geminiAnalysis?.education || [],
+      justification: candidate.geminiAnalysis?.justification || "No justification provided.",
+      warnings: candidate.geminiAnalysis?.warnings || [],
+      isFlagged: index < numToFlag,
+    };
+  });
+
+  res.status(200).json(processedCandidates);
+});
 
 // @desc    Get status of a specific resume
 // @route   GET /api/resumes/:resumeId/status
 // @access  Private
-const getResumeStatus = async (req, res) => {
+const getResumeStatus = catchAsync(async (req, res, next) => {
   const { resumeId } = req.params;
   const userId = req.user.id;
 
-  try {
-    const resume = await Resume.findById(resumeId);
-    if (!resume) {
-      return res.status(404).json({ message: 'Resume not found.' });
-    }
-
-    if (resume.userId.toString() !== userId) {
-      return res.status(403).json({ message: 'You are not authorized to view this resume.' });
-    }
-
-    res.status(200).json({
-      resumeId: resume._id,
-      processingStatus: resume.processingStatus,
-      errorDetails: resume.errorDetails,
-      score: resume.score,
-      originalFilename: resume.originalFilename,
-    });
-  } catch (error) {
-    console.error(`Error fetching resume status for ${resumeId}:`, error);
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Invalid resume ID format.' });
-    }
-    res.status(500).json({ message: 'Server error fetching resume status.' });
+  const resume = await Resume.findById(resumeId);
+  if (!resume) {
+    return next(new AppError('Resume not found.', 404));
   }
+
+  if (resume.userId.toString() !== userId) {
+    return next(new AppError('You are not authorized to view this resume.', 403));
+  }
+
+  res.status(200).json({
+    resumeId: resume._id,
+    processingStatus: resume.processingStatus,
+    errorDetails: resume.errorDetails,
+    score: resume.score,
+    originalFilename: resume.originalFilename,
+  });
+});
+
+module.exports = {
+  uploadResume,
+  getCandidatesForJob,
+  getResumeStatus,
 };
 
 

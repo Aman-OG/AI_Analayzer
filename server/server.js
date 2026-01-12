@@ -82,10 +82,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/resumes', resumeRoutes); // Add this line
 app.use('/api/jobs', jobRoutes); // Add this line
 
-// --- Other Routes (will be added later) ---
-// app.use('/api/jobs', jobRoutes);
-// app.use('/api/resumes', resumeRoutes);
+// --- Unhandled Routes ---
+const AppError = require('./utils/appError');
+app.all('*', (req, res, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+});
 
+// --- Global Error Handling Middleware ---
+const errorHandler = require('./middleware/errorMiddleware');
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
