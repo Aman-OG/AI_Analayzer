@@ -82,10 +82,25 @@ const strictLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * Limit for AI-intensive analysis
+ * 15 requests per 30 minutes
+ */
+const aiLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000, // 30 minutes
+  max: 15,
+  message: {
+    error: 'AI analysis limit reached. Please try again after 30 minutes.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 module.exports = {
   authLimiter,
   uploadLimiter,
   jobLimiter,
   generalLimiter,
   strictLimiter,
+  aiLimiter,
 };

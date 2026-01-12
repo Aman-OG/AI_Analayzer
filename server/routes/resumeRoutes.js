@@ -8,7 +8,9 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware'); // Multer instance
 const { handleMulterError } = require('../middleware/uploadMiddleware');
-const { uploadLimiter } = require('../middleware/rateLimitMiddleware');
+const { uploadLimiter, aiLimiter } = require('../middleware/rateLimitMiddleware');
+const validate = require('../middleware/validationMiddleware');
+const { resumeSchemas } = require('../schemas');
 
 const router = express.Router();
 
@@ -17,8 +19,10 @@ const router = express.Router();
 router.post(
     '/upload',
     uploadLimiter, // Rate limit uploads
+    aiLimiter, // Rate limit AI specifically
     protect, // Ensure user is authenticated
     upload.single('resumeFile'), // Multer middleware for single file
+    validate(resumeSchemas.upload), // Validate jobId in body
     handleMulterError, // Handle multer-specific errors
     uploadResume
 );

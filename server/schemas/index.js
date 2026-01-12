@@ -28,7 +28,14 @@ const authSchemas = {
     }
 };
 
+const resumeSchemas = {
+    upload: {
+        jobId: { type: 'string', required: true },
+    }
+};
+
 module.exports = {
     jobSchemas,
-    authSchemas
+    authSchemas,
+    resumeSchemas,
 };
