@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "AI Resume Analyzer API",
-        "description": "API for managing job descriptions, resumes, and AI-driven analysis results.",
+        "description": "API for managing job descriptions, resumes, and AI-driven analysis results using Google Gemini.",
         "version": "1.0.0"
     },
     "servers": [
@@ -64,6 +64,55 @@
                     "createdAt": {
                         "type": "string",
                         "format": "date-time"
+                    }
+                }
+            },
+            "Candidate": {
+                "type": "object",
+                "properties": {
+                    "candidateId": {
+                        "type": "string"
+                    },
+                    "originalFilename": {
+                        "type": "string"
+                    },
+                    "fileType": {
+                        "type": "string"
+                    },
+                    "uploadTimestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "score": {
+                        "type": "number"
+                    },
+                    "skills": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "yearsExperience": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "education": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "justification": {
+                        "type": "string"
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "isFlagged": {
+                        "type": "boolean"
                     }
                 }
             }
@@ -186,7 +235,31 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/Job"
+                                "type": "object",
+                                "required": [
+                                    "title",
+                                    "descriptionText"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "descriptionText": {
+                                        "type": "string"
+                                    },
+                                    "mustHaveSkills": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "focusAreas": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -194,6 +267,112 @@
                 "responses": {
                     "201": {
                         "description": "Created"
+                    }
+                }
+            }
+        },
+        "/resumes/upload": {
+            "post": {
+                "summary": "Upload a resume and trigger AI analysis",
+                "tags": [
+                    "Resumes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "jobId": {
+                                        "type": "string"
+                                    },
+                                    "resumeFile": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Uploaded and analysis queued"
+                    },
+                    "400": {
+                        "description": "Invalid file or missing data"
+                    }
+                }
+            }
+        },
+        "/resumes/job/{jobId}/candidates": {
+            "get": {
+                "summary": "Get analyzed candidates for a job",
+                "tags": [
+                    "Resumes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Candidate"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/resumes/{resumeId}/status": {
+            "get": {
+                "summary": "Check processing status of a resume",
+                "tags": [
+                    "Resumes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "resumeId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
                     }
                 }
             }
