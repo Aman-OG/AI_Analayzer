@@ -32,3 +32,37 @@ I am a passionate **IT Student** and **Developer** with a deep interest in build
 ![Git](https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white)
 
 <br/>
+
+## 📊 My GitHub Stats
+
+<div align="center">
+  <img src="https://github-readme-stats.vercel.app/api?username=Aman-OG&show_icons=true&theme=radical" alt="Aman-OG's GitHub Stats" />
+  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=Aman-OG&layout=compact&theme=radical" alt="Top Languages" />
+</div>
+
+<br/>
+
+### 📈 Activity Streak
+<div align="center">
+  <img src="https://github-readme-streak-stats.herokuapp.com/?user=Aman-OG&theme=radical" alt="Aman-OG's Streak Stats" />
+</div>
+
+<br/>
+
+## 📬 Connect with Me
+
+<div align="center">
+  <a href="mailto:amanbaye4@gmail.com">
+    <img src="https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Gmail" />
+  </a>
+  <a href="https://github.com/Aman-OG">
+    <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
+  </a>
+</div>
+
+<br/>
+
+---
+<div align="center">
+  <sub>Built with ❤️ by Aman</sub>
+</div>
