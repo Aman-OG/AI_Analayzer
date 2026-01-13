@@ -29,6 +29,12 @@ initGemini();
 
 const app = express();
 
+// --- Static Documentation ---
+app.use('/api-docs', express.static(path.join(__dirname, 'docs')));
+app.get('/api-docs', (req, res) => {
+  res.sendFile(path.join(__dirname, 'docs', 'index.html'));
+});
+
 // Security Middleware - Apply these FIRST
 app.use(helmetConfig); // Helmet for security headers
 app.use(sanitizeResponseHeaders); // Remove sensitive headers
