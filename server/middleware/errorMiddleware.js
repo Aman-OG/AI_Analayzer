@@ -1,4 +1,5 @@
 const AppError = require('../utils/appError');
+const logger = require('../utils/logger');
 
 /**
  * Global Error Handling Middleware
@@ -42,7 +43,11 @@ const sendErrorProd = (err, res) => {
         });
     } else {
         // Programming or other unknown error: don't leak error details
-        console.error('ERROR 💥', err);
+        logger.error('Unhandled Exception 💥', {
+            error: err.message,
+            stack: err.stack,
+            name: err.name
+        });
         res.status(500).json({
             status: 'error',
             message: 'Something went very wrong!'

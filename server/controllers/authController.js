@@ -1,6 +1,7 @@
 const { getSupabase } = require('../config/supabaseClient');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const logger = require('../utils/logger');
 
 // @desc    Register/Sign up a new user
 // @route   POST /api/auth/signup
@@ -40,7 +41,7 @@ const signupUser = catchAsync(async (req, res, next) => {
       session: data.session
     });
   } else {
-    console.error("Supabase signup response anomaly:", data);
+    logger.error("Supabase signup response anomaly", { data });
     return next(new AppError("Signup completed but session data is unavailable. Please try logging in or check email confirmation.", 500));
   }
 });
@@ -109,7 +110,7 @@ const logoutUser = catchAsync(async (req, res, next) => {
   const { error } = await supabase.auth.signOut(token);
 
   if (error) {
-    console.error('Supabase signout error:', error.message);
+    logger.error('Supabase signout error', { error: error.message });
   }
 
   res.status(200).json({ message: 'Logout successful' });

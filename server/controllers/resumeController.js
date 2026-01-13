@@ -5,6 +5,7 @@ const { triggerGeminiAnalysis } = require('../services/geminiService');
 const { validateResumeFile, checkForMaliciousContent } = require('../utils/fileValidator');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const logger = require('../utils/logger');
 
 // @desc    Upload a resume, extract text, and save metadata
 // @route   POST /api/resumes/upload
@@ -29,13 +30,21 @@ const uploadResume = catchAsync(async (req, res, next) => {
   // COMPREHENSIVE FILE VALIDATION
   const fileValidation = validateResumeFile(req.file);
   if (!fileValidation.isValid) {
-    console.warn(`[Security] File validation failed for ${req.file.originalname}: ${fileValidation.error}`);
+    logger.warn(`File validation failed for ${req.file.originalname}: ${fileValidation.error}`, {
+      filename: req.file.originalname,
+      error: fileValidation.error,
+      userId: req.user.id
+    });
     return next(new AppError(fileValidation.error, 400));
   }
 
   const maliciousCheck = checkForMaliciousContent(req.file.buffer);
   if (!maliciousCheck.isValid) {
-    console.error(`[Security Alert] Malicious content detected in ${req.file.originalname} from user ${req.user.id}`);
+    logger.error(`Malicious content detected in ${req.file.originalname} from user ${req.user.id}`, {
+      filename: req.file.originalname,
+      error: maliciousCheck.error,
+      userId: req.user.id
+    });
     return next(new AppError(maliciousCheck.error, 400));
   }
 
@@ -49,7 +58,11 @@ const uploadResume = catchAsync(async (req, res, next) => {
   try {
     extractedText = await extractTextFromBuffer(fileBuffer, mimeType);
   } catch (extractionError) {
-    console.error(`Text extraction failed for ${originalFilename}:`, extractionError);
+    logger.error(`Text extraction failed for ${originalFilename}`, {
+      filename: originalFilename,
+      error: extractionError.message,
+      stack: extractionError.stack
+    });
     return next(new AppError(`Failed to extract text from file: ${extractionError.message}`, 500));
   }
 
@@ -71,10 +84,14 @@ const uploadResume = catchAsync(async (req, res, next) => {
   // Trigger Gemini Analysis Asynchronously
   triggerGeminiAnalysis(newResume._id)
     .then(() => {
-      console.log(`[ResumeController] Gemini analysis for ${newResume._id} initiated successfully.`);
+      logger.info(`Gemini analysis for ${newResume._id} initiated successfully.`, { resumeId: newResume._id });
     })
     .catch(err => {
-      console.error(`[ResumeController] Failed to initiate Gemini analysis for ${newResume._id}:`, err);
+      logger.error(`Failed to initiate Gemini analysis for ${newResume._id}`, {
+        resumeId: newResume._id,
+        error: err.message,
+        stack: err.stack
+      });
     });
 
   res.status(201).json({

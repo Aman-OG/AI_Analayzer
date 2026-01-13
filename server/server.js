@@ -94,6 +94,7 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
+const logger = require('./utils/logger');
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
 });

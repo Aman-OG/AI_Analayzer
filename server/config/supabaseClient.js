@@ -1,5 +1,6 @@
 // server/config/supabaseClient.js
 const { createClient } = require('@supabase/supabase-js');
+const logger = require('./logger');
 
 let supabase;
 
@@ -8,27 +9,30 @@ const initSupabase = () => {
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase URL or Anon Key missing in .env file');
-    // Optionally throw an error or exit, depending on how critical Supabase is at startup
-    // process.exit(1);
+    logger.error('Supabase URL or Anon Key missing in .env file');
     return null; // Return null if initialization fails
   }
 
   if (!supabase) {
+    try {
       supabase = createClient(supabaseUrl, supabaseAnonKey);
-      console.log('Supabase client initialized.');
+      logger.info('Supabase client initialized.');
+    } catch (error) {
+      logger.error("Failed to initialize Supabase client:", error);
+      return null;
+    }
   }
   return supabase;
 };
 
 // Function to get the initialized client instance
 const getSupabase = () => {
-    if (!supabase) {
-       console.warn('Supabase client requested before initialization or initialization failed.');
-       // Attempt to initialize again or handle error as needed
-       return initSupabase();
-    }
-    return supabase;
+  if (!supabase) {
+    logger.warn('Supabase client requested before initialization or initialization failed.');
+    // Attempt to initialize again or handle error as needed
+    return initSupabase();
+  }
+  return supabase;
 }
 
 module.exports = { initSupabase, getSupabase };
