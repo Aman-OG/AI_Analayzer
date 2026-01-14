@@ -136,11 +136,57 @@ const logoutUser = catchAsync(async (req, res, next) => {
   res.status(200).json({ message: 'Logout successful' });
 });
 
+/**
+ * @desc    Refresh authentication token
+ * @route   POST /api/auth/refresh
+ * @access  Public
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
+const refreshToken = catchAsync(async (req, res, next) => {
+  const { refresh_token } = req.body;
+
+  if (!refresh_token) {
+    return next(new AppError('Refresh token is required.', 400));
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) {
+    return next(new AppError('Auth service unavailable', 501));
+  }
+
+  const { data, error } = await supabase.auth.refreshSession({ refresh_token });
+
+  if (error) {
+    logger.error('Token refresh failed', { error: error.message });
+    return next(new AppError(error.message, 401));
+  }
+
+  const { session, user } = data;
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: {
+        id: user.id,
+        email: user.email,
+      },
+      session: {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at,
+      },
+    },
+  });
+});
+
 module.exports = {
   signupUser,
   loginUser,
   getUser,
   logoutUser,
+  refreshToken,
 };
 
 

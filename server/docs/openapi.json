@@ -193,6 +193,40 @@
                 }
             }
         },
+        "/auth/refresh": {
+            "post": {
+                "summary": "Refresh session token",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "refresh_token"
+                                ],
+                                "properties": {
+                                    "refresh_token": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed"
+                    },
+                    "401": {
+                        "description": "Invalid refresh token"
+                    }
+                }
+            }
+        },
         "/jobs": {
             "get": {
                 "summary": "Get all jobs for logged-in user",

@@ -11,6 +11,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,11 +47,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Session and user will be set to null by onAuthStateChange
   };
 
+  const refreshSession = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const value = {
     session,
     user,
     isLoading,
     signOut,
+    refreshSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
