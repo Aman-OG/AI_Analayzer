@@ -2,9 +2,14 @@ const JobDescription = require('../models/JobDescriptionModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
-// @desc    Create a new job description
-// @route   POST /api/jobs
-// @access  Private
+/**
+ * @desc    Create a new job description
+ * @route   POST /api/jobs
+ * @access  Private
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const createJob = catchAsync(async (req, res, next) => {
   const { title, descriptionText, mustHaveSkills, focusAreas } = req.body;
   const userId = req.user.id; // From authMiddleware
@@ -25,16 +30,19 @@ const createJob = catchAsync(async (req, res, next) => {
   res.status(201).json(savedJob);
 });
 
-// @desc    Get all job descriptions for the logged-in user
-// @route   GET /api/jobs
-// @access  Private
+/**
+ * @desc    Get all jobs for the authenticated user
+ * @route   GET /api/jobs
+ * @access  Private
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const getJobs = catchAsync(async (req, res, next) => {
   const jobs = await JobDescription.find({ userId: req.user.id }).sort({ createdAt: -1 });
   res.status(200).json(jobs);
 });
 
-// @desc    Get a single job description by ID
-// @route   GET /api/jobs/:id
 // @access  Private (ensure user owns this job)
 const getJobById = catchAsync(async (req, res, next) => {
   const job = await JobDescription.findById(req.params.id);
@@ -54,6 +62,14 @@ const getJobById = catchAsync(async (req, res, next) => {
 // @desc    Update a job description
 // @route   PUT /api/jobs/:id
 // @access  Private
+/**
+ * @desc    Update a job description
+ * @route   PUT /api/jobs/:id
+ * @access  Private
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const updateJob = catchAsync(async (req, res, next) => {
   const { title, descriptionText, mustHaveSkills, focusAreas } = req.body;
   let job = await JobDescription.findById(req.params.id);
@@ -78,6 +94,14 @@ const updateJob = catchAsync(async (req, res, next) => {
 // @desc    Delete a job description
 // @route   DELETE /api/jobs/:id
 // @access  Private
+/**
+ * @desc    Delete a job description
+ * @route   DELETE /api/jobs/:id
+ * @access  Private
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const deleteJob = catchAsync(async (req, res, next) => {
   const job = await JobDescription.findById(req.params.id);
 

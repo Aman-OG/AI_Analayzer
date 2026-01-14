@@ -1,7 +1,12 @@
 /**
  * Custom Error class for operational errors
+ * Extends built-in Error to include status, statusCode and isOperational flag
  */
 class AppError extends Error {
+    /**
+     * @param {string} message - Error message
+     * @param {number} statusCode - HTTP status code
+     */
     constructor(message, statusCode) {
         super(message);
 

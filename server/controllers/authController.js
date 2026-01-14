@@ -3,9 +3,14 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const logger = require('../utils/logger');
 
-// @desc    Register/Sign up a new user
-// @route   POST /api/auth/signup
-// @access  Public
+/**
+ * @desc    Register/Sign up a new user
+ * @route   POST /api/auth/signup
+ * @access  Public
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const signupUser = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
   const supabase = getSupabase();
@@ -46,9 +51,14 @@ const signupUser = catchAsync(async (req, res, next) => {
   }
 });
 
-// @desc    Authenticate/Login user
-// @route   POST /api/auth/login
-// @access  Public
+/**
+ * @desc    Authenticate/Login user
+ * @route   POST /api/auth/login
+ * @access  Public
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const loginUser = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
   const supabase = getSupabase();
@@ -82,9 +92,14 @@ const loginUser = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Get current user details
-// @route   GET /api/auth/user
-// @access  Private
+/**
+ * @desc    Get current user details
+ * @route   GET /api/auth/user
+ * @access  Private
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const getUser = catchAsync(async (req, res, next) => {
   if (req.user) {
     res.status(200).json(req.user);
@@ -93,9 +108,14 @@ const getUser = catchAsync(async (req, res, next) => {
   }
 });
 
-// @desc    Log out user
-// @route   POST /api/auth/logout
-// @access  Private
+/**
+ * @desc    Log out user
+ * @route   POST /api/auth/logout
+ * @access  Private
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const logoutUser = catchAsync(async (req, res, next) => {
   const supabase = getSupabase();
   if (!supabase) {

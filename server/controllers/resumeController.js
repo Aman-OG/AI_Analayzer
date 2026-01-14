@@ -7,15 +7,23 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const logger = require('../utils/logger');
 
-// @desc    Upload a resume, extract text, and save metadata
-// @route   POST /api/resumes/upload
-// @access  Private (requires authentication)
+/**
+ * @desc    Upload a resume, extract text, and save metadata
+ * @route   POST /api/resumes/upload
+ * @access  Private (requires authentication)
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const uploadResume = catchAsync(async (req, res, next) => {
   if (!req.file) {
     return next(new AppError('No file uploaded.', 400));
   }
 
   const { jobId } = req.body;
+  const fileBuffer = req.file.buffer;
+  const originalFilename = req.file.originalname;
+  const mimeType = req.file.mimetype;
 
   if (!jobId) {
     return next(new AppError('Job ID is required.', 400));
@@ -49,9 +57,6 @@ const uploadResume = catchAsync(async (req, res, next) => {
   }
 
   const userId = req.user.id;
-  const fileBuffer = req.file.buffer;
-  const mimeType = req.file.mimetype;
-  const originalFilename = req.file.originalname;
 
   // Extract text from validated file
   let extractedText;
@@ -100,12 +105,20 @@ const uploadResume = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Get processed candidates for a specific job
-// @route   GET /api/resumes/job/:jobId/candidates
-// @access  Private (user must own the job)
+/**
+ * @desc    Get all candidates for a specific job with pagination
+ * @route   GET /api/resumes/job/:jobId/candidates
+ * @access  Private
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const getCandidatesForJob = catchAsync(async (req, res, next) => {
   const { jobId } = req.params;
   const userId = req.user.id;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const skip = (page - 1) * limit;
 
   // 1. Validate Job Ownership
   const job = await JobDescription.findById(jobId);
@@ -116,44 +129,53 @@ const getCandidatesForJob = catchAsync(async (req, res, next) => {
     return next(new AppError('You are not authorized to view candidates for this job.', 403));
   }
 
-  // 2. Fetch Processed Resumes for this Job
-  const candidates = await Resume.find({
+  // 2. Fetch Processed Resumes for this Job with pagination
+  const resumes = await Resume.find({
     jobId: jobId,
     processingStatus: 'completed',
   })
     .sort({ score: -1 })
-    .select('_id originalFilename uploadTimestamp score geminiAnalysis.skills geminiAnalysis.yearsExperience geminiAnalysis.education geminiAnalysis.justification geminiAnalysis.warnings processingStatus fileType')
-    .lean();
+    .skip(skip)
+    .limit(limit);
 
-  if (!candidates || candidates.length === 0) {
-    return res.status(200).json([]);
-  }
-
-  // 3. Calculate Top Performers
-  const numToFlag = Math.max(1, Math.ceil(candidates.length * 0.20));
-
-  const processedCandidates = candidates.map((candidate, index) => {
-    return {
-      candidateId: candidate._id,
-      originalFilename: candidate.originalFilename,
-      fileType: candidate.fileType,
-      uploadTimestamp: candidate.uploadTimestamp,
-      score: candidate.score,
-      skills: candidate.geminiAnalysis?.skills || [],
-      yearsExperience: candidate.geminiAnalysis?.yearsExperience || null,
-      education: candidate.geminiAnalysis?.education || [],
-      justification: candidate.geminiAnalysis?.justification || "No justification provided.",
-      warnings: candidate.geminiAnalysis?.warnings || [],
-      isFlagged: index < numToFlag,
-    };
+  const total = await Resume.countDocuments({
+    jobId: jobId,
+    processingStatus: 'completed',
   });
 
-  res.status(200).json(processedCandidates);
+  // Map to a more friendly "Candidate" structure for the frontend
+  const candidates = resumes.map(doc => ({
+    candidateId: doc._id,
+    originalFilename: doc.originalFilename,
+    fileType: doc.fileType,
+    uploadTimestamp: doc.createdAt,
+    score: doc.score,
+    skills: doc.geminiAnalysis?.skills || [],
+    yearsExperience: doc.geminiAnalysis?.yearsExperience || null,
+    education: doc.geminiAnalysis?.education || [],
+    justification: doc.geminiAnalysis?.justification || '',
+    warnings: doc.geminiAnalysis?.warnings || [],
+    isFlagged: (doc.geminiAnalysis?.warnings?.length || 0) > 0
+  }));
+
+  res.status(200).json({
+    status: 'success',
+    results: candidates.length,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+    data: candidates
+  });
 });
 
-// @desc    Get status of a specific resume
-// @route   GET /api/resumes/:resumeId/status
-// @access  Private
+/**
+ * @desc    Get the status of a specific resume analysis
+ * @route   GET /api/resumes/:resumeId/status
+ * @access  Private
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ */
 const getResumeStatus = catchAsync(async (req, res, next) => {
   const { resumeId } = req.params;
   const userId = req.user.id;
@@ -168,11 +190,15 @@ const getResumeStatus = catchAsync(async (req, res, next) => {
   }
 
   res.status(200).json({
-    resumeId: resume._id,
-    processingStatus: resume.processingStatus,
-    errorDetails: resume.errorDetails,
-    score: resume.score,
-    originalFilename: resume.originalFilename,
+    status: 'success',
+    data: {
+      resumeId: resume._id,
+      processingStatus: resume.processingStatus,
+      errorDetails: resume.errorDetails,
+      score: resume.score,
+      originalFilename: resume.originalFilename,
+      updatedAt: resume.updatedAt
+    }
   });
 });
 
@@ -180,12 +206,4 @@ module.exports = {
   uploadResume,
   getCandidatesForJob,
   getResumeStatus,
-};
-
-
-module.exports = {
-  uploadResume,
-  getCandidatesForJob,
-  getResumeStatus,
-  // other resume controllers if any
 };
