@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node dist/server.js",
+    "dev": "tsx server.js",
+    "build": "tsc",
     "pretest": "echo 'Running tests...' && node -e \"console.log('Node version:', process.version)\"",
     "test": "jest --coverage --detectOpenHandles",
     "test:watch": "jest --watch --detectOpenHandles",
