@@ -21,21 +21,52 @@ import {
 } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Star, AlertCircle, RefreshCcw, ChevronDown } from 'lucide-react';
+import { Star, AlertCircle, RefreshCcw, ChevronDown, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TableSkeleton } from '@/components/Loading';
 import { useError } from '@/contexts/ErrorContext';
+import { toast } from 'sonner';
+
+import CandidateComparison from './CandidateComparison';
 
 interface CandidateListProps {
   jobId: string;
+  jobTitle: string;
   refreshTrigger: number;
 }
 
-export default function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
+export default function CandidateList({ jobId, jobTitle, refreshTrigger }: CandidateListProps) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { showError } = useError();
+
+  const selectedCandidates = candidates.filter(c => selectedIds.includes(c.candidateId));
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id)
+        ? prev.filter(i => i !== id)
+        : (prev.length < 3 ? [...prev, id] : prev)
+    );
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await resumeService.exportCandidates(jobId, jobTitle);
+      toast.success("CSV Export Successful", {
+        description: `Candidate rankings for "${jobTitle}" have been downloaded.`
+      });
+    } catch (err: any) {
+      showError(err, { jobId });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const fetchCandidates = useCallback(async () => {
     if (!jobId) return;
@@ -111,7 +142,27 @@ export default function CandidateList({ jobId, refreshTrigger }: CandidateListPr
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowComparison(true)}
+          disabled={selectedIds.length === 0}
+          className="flex items-center space-x-1 border-emerald-200 hover:bg-emerald-50 text-emerald-700"
+        >
+          <Users className="h-4 w-4" />
+          <span>Compare {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExport}
+          disabled={isLoading || isExporting || candidates.length === 0}
+          className="flex items-center space-x-1 border-violet-200 hover:bg-violet-50 text-violet-700"
+        >
+          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -124,6 +175,12 @@ export default function CandidateList({ jobId, refreshTrigger }: CandidateListPr
         </Button>
       </div>
 
+      <CandidateComparison
+        isOpen={showComparison}
+        onClose={() => setShowComparison(false)}
+        candidates={selectedCandidates}
+      />
+
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <Accordion type="single" collapsible>
           <Table>
@@ -132,6 +189,11 @@ export default function CandidateList({ jobId, refreshTrigger }: CandidateListPr
             </TableCaption>
             <TableHeader className="bg-gray-50 sticky top-0">
               <TableRow>
+                <TableHead className="w-[40px]">
+                  <div className="flex items-center justify-center">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </TableHead>
                 <TableHead className="w-[40px]">#</TableHead>
                 <TableHead className="w-[40px] text-center">★</TableHead>
                 <TableHead>Score</TableHead>
@@ -144,8 +206,19 @@ export default function CandidateList({ jobId, refreshTrigger }: CandidateListPr
               {candidates.map((c, i) => (
                 <TableRow
                   key={c.candidateId}
-                  className="odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition"
+                  className={`${selectedIds.includes(c.candidateId) ? 'bg-emerald-50/50' : 'odd:bg-white even:bg-gray-50'} hover:bg-gray-100 transition`}
                 >
+                  <TableCell>
+                    <div className="flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-600 cursor-pointer"
+                        checked={selectedIds.includes(c.candidateId)}
+                        onChange={() => toggleSelection(c.candidateId)}
+                        disabled={!selectedIds.includes(c.candidateId) && selectedIds.length >= 3}
+                      />
+                    </div>
+                  </TableCell>
                   <TableCell className="font-medium">{i + 1}</TableCell>
                   <TableCell className="text-center">
                     {c.isFlagged && (

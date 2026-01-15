@@ -237,8 +237,8 @@ export default function JobDetailPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-2 sm:px-4 py-4">
-          {jobId ? ( // jobId is confirmed if job is loaded
-            <CandidateList jobId={jobId} refreshTrigger={refreshTrigger} />
+          {jobId && job ? (
+            <CandidateList jobId={jobId} jobTitle={job.title} refreshTrigger={refreshTrigger} />
           ) : (
             // This case should ideally not be hit if job is loaded, but as a fallback:
             <div className="text-center py-8 text-gray-500">

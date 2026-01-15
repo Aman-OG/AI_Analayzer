@@ -42,6 +42,10 @@ export type Candidate = {
 export type ResumeUploadResponse = {
   message: string;
   resumeId: string;
+  data?: Array<{
+    resumeId: string;
+    filename: string;
+  }>;
 }
 
 // Define the type first
