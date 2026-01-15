@@ -12,13 +12,13 @@ import { resumeSchemas } from '../schemas';
 
 const router = express.Router();
 
-// Single file upload, field name in form-data should be 'resumeFile'
+// Bulk file upload, field name in form-data should be 'resumeFiles'
 router.post(
     '/upload',
     uploadLimiter,
     aiLimiter,
     protect,
-    upload.single('resumeFile'),
+    upload.array('resumeFiles', 10), // Support up to 10 files
     validate(resumeSchemas.upload),
     handleMulterError,
     uploadResume

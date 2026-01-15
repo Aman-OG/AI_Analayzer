@@ -9,20 +9,18 @@ import catchAsync from '../utils/catchAsync';
 import logger from '../utils/logger';
 
 /**
- * @desc    Upload a resume, extract text, and save metadata
+ * @desc    Upload resumes, extract text, and save metadata (Bulk support)
  * @route   POST /api/resumes/upload
  * @access  Private (requires authentication)
  */
 export const uploadResume = catchAsync(async (req: any, res: Response, next: NextFunction) => {
-    if (!req.file) {
-        return next(new AppError('No file uploaded.', 400));
+    const files = req.files as Express.Multer.File[];
+
+    if (!files || files.length === 0) {
+        return next(new AppError('No files uploaded.', 400));
     }
 
     const { jobId } = req.body;
-    const fileBuffer = req.file.buffer;
-    const originalFilename = req.file.originalname;
-    const mimeType = req.file.mimetype;
-
     if (!jobId) {
         return next(new AppError('Job ID is required.', 400));
     }
@@ -33,73 +31,92 @@ export const uploadResume = catchAsync(async (req: any, res: Response, next: Nex
         return next(new AppError('Job description not found or you are not authorized for this job.', 404));
     }
 
-    // COMPREHENSIVE FILE VALIDATION
-    const fileValidation = validateResumeFile(req.file);
-    if (!fileValidation.isValid) {
-        logger.warn(`File validation failed for ${req.file.originalname}: ${fileValidation.error}`, {
-            filename: req.file.originalname,
-            error: fileValidation.error,
-            userId: req.user.id
-        });
-        return next(new AppError(fileValidation.error, 400));
-    }
-
-    const maliciousCheck = checkForMaliciousContent(req.file.buffer);
-    if (!maliciousCheck.isValid) {
-        logger.error(`Malicious content detected in ${req.file.originalname} from user ${req.user.id}`, {
-            filename: req.file.originalname,
-            error: maliciousCheck.error,
-            userId: req.user.id
-        });
-        return next(new AppError(maliciousCheck.error, 400));
-    }
-
     const userId = req.user.id;
+    const uploadedResumes = [];
 
-    // Extract text from validated file
-    let extractedText: string;
-    try {
-        extractedText = await extractTextFromBuffer(fileBuffer, mimeType);
-    } catch (extractionError: any) {
-        logger.error(`Text extraction failed for ${originalFilename}`, {
-            filename: originalFilename,
-            error: extractionError.message,
-            stack: extractionError.stack
-        });
-        return next(new AppError(`Failed to extract text from file: ${extractionError.message}`, 500));
-    }
+    // Process each file
+    for (const file of files) {
+        try {
+            // COMPREHENSIVE FILE VALIDATION
+            const fileValidation = validateResumeFile(file);
+            if (!fileValidation.isValid) {
+                logger.warn(`File validation failed for ${file.originalname}: ${fileValidation.error}`, {
+                    filename: file.originalname,
+                    error: fileValidation.error,
+                    userId
+                });
+                continue; // Skip invalid files in bulk upload
+            }
 
-    if (!extractedText || extractedText.trim() === '') {
-        return next(new AppError('Could not extract any text from the resume or the resume is empty.', 400));
-    }
+            const maliciousCheck = checkForMaliciousContent(file.buffer);
+            if (!maliciousCheck.isValid) {
+                logger.error(`Malicious content detected in ${file.originalname} from user ${userId}`, {
+                    filename: file.originalname,
+                    error: maliciousCheck.error,
+                    userId
+                });
+                continue;
+            }
 
-    const newResume = new Resume({
-        userId,
-        jobId,
-        originalFilename,
-        fileType: mimeType,
-        extractedText,
-        processingStatus: 'uploaded',
-    });
+            // Extract text
+            let extractedText: string;
+            try {
+                extractedText = await extractTextFromBuffer(file.buffer, file.mimetype);
+            } catch (extractionError: any) {
+                logger.error(`Text extraction failed for ${file.originalname}`, {
+                    filename: file.originalname,
+                    error: extractionError.message
+                });
+                continue;
+            }
 
-    await newResume.save();
+            if (!extractedText || extractedText.trim() === '') {
+                logger.warn(`No text extracted from ${file.originalname}`);
+                continue;
+            }
 
-    // Trigger Gemini Analysis Asynchronously
-    triggerGeminiAnalysis((newResume._id as any).toString())
-        .then(() => {
-            logger.info(`Gemini analysis for ${newResume._id} initiated successfully.`, { resumeId: newResume._id });
-        })
-        .catch(err => {
-            logger.error(`Failed to initiate Gemini analysis for ${newResume._id}`, {
-                resumeId: newResume._id,
-                error: err.message,
-                stack: err.stack
+            const newResume = new Resume({
+                userId,
+                jobId,
+                originalFilename: file.originalname,
+                fileType: file.mimetype,
+                extractedText,
+                processingStatus: 'uploaded',
             });
-        });
+
+            await newResume.save();
+
+            // Trigger Gemini Analysis Asynchronously
+            triggerGeminiAnalysis((newResume._id as any).toString())
+                .then(() => {
+                    logger.info(`Gemini analysis for ${newResume._id} initiated successfully.`, { resumeId: newResume._id });
+                })
+                .catch(err => {
+                    logger.error(`Failed to initiate Gemini analysis for ${newResume._id}`, {
+                        resumeId: newResume._id,
+                        error: err.message
+                    });
+                });
+
+            uploadedResumes.push({
+                resumeId: newResume._id,
+                filename: file.originalname
+            });
+
+        } catch (err: any) {
+            logger.error(`Unexpected error processing ${file.originalname}`, { error: err.message });
+        }
+    }
+
+    if (uploadedResumes.length === 0) {
+        return next(new AppError('All uploaded files failed validation or processing.', 400));
+    }
 
     res.status(201).json({
-        message: 'Resume uploaded and text extracted. Analysis has been queued.',
-        resumeId: newResume._id,
+        message: `${uploadedResumes.length} resume(s) uploaded and queued for analysis.`,
+        data: uploadedResumes,
+        // For backward compatibility or single file access
+        resumeId: uploadedResumes[0].resumeId,
     });
 });
 
