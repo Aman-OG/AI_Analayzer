@@ -1,5 +1,5 @@
-// src/App.tsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from 'next-themes';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -8,6 +8,10 @@ import JobsListPage from './pages/JobsListPage';
 import JobDetailPage from './pages/JobDetailPage';
 import CreateJobPage from './pages/CreateJobPage';
 import DashboardPage from './pages/DashboardPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import { ErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
+import { ErrorProvider } from './contexts/ErrorContext';
+import { useAuth } from './contexts/AuthContext';
 
 function App() {
   const { isLoading } = useAuth();
@@ -24,60 +28,62 @@ function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <ErrorProvider>
-        <Router>
-          <Layout>
-            <Routes>
-              {/* Public Routes */}
-              <Route
-                path="/login"
-                element={<LoginPage />}
-                errorElement={<RouteErrorBoundary />}
-              />
-              <Route
-                path="/signup"
-                element={<SignupPage />}
-                errorElement={<RouteErrorBoundary />}
-              />
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ErrorBoundary>
+        <ErrorProvider>
+          <Router>
+            <Layout>
+              <Routes>
+                {/* Public Routes */}
+                <Route
+                  path="/login"
+                  element={<LoginPage />}
+                  errorElement={<RouteErrorBoundary />}
+                />
+                <Route
+                  path="/signup"
+                  element={<SignupPage />}
+                  errorElement={<RouteErrorBoundary />}
+                />
 
-              {/* Protected Routes */}
-              <Route
-                path="/"
-                element={<ProtectedRoute><HomePage /></ProtectedRoute>}
-                errorElement={<RouteErrorBoundary />}
-              />
-              <Route
-                path="/jobs"
-                element={<ProtectedRoute><JobsListPage /></ProtectedRoute>}
-                errorElement={<RouteErrorBoundary />}
-              />
-              <Route
-                path="/jobs/new"
-                element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>}
-                errorElement={<RouteErrorBoundary />}
-              />
-              <Route
-                path="/jobs/:jobId"
-                element={<ProtectedRoute><JobDetailPage /></ProtectedRoute>}
-                errorElement={<RouteErrorBoundary />}
-              />
+                {/* Protected Routes */}
+                <Route
+                  path="/"
+                  element={<ProtectedRoute><HomePage /></ProtectedRoute>}
+                  errorElement={<RouteErrorBoundary />}
+                />
+                <Route
+                  path="/jobs"
+                  element={<ProtectedRoute><JobsListPage /></ProtectedRoute>}
+                  errorElement={<RouteErrorBoundary />}
+                />
+                <Route
+                  path="/jobs/new"
+                  element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>}
+                  errorElement={<RouteErrorBoundary />}
+                />
+                <Route
+                  path="/jobs/:jobId"
+                  element={<ProtectedRoute><JobDetailPage /></ProtectedRoute>}
+                  errorElement={<RouteErrorBoundary />}
+                />
 
-              {/* 404 - Not Found */}
-              <Route
-                path="*"
-                element={<RouteErrorBoundary />}
-              />
-              <Route
-                path="/dashboard"
-                element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
-                errorElement={<RouteErrorBoundary />}
-              />
-            </Routes>
-          </Layout>
-        </Router>
-      </ErrorProvider>
-    </ErrorBoundary>
+                {/* 404 - Not Found */}
+                <Route
+                  path="*"
+                  element={<RouteErrorBoundary />}
+                />
+                <Route
+                  path="/dashboard"
+                  element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
+                  errorElement={<RouteErrorBoundary />}
+                />
+              </Routes>
+            </Layout>
+          </Router>
+        </ErrorProvider>
+      </ErrorBoundary>
+    </ThemeProvider>
   );
 }
 

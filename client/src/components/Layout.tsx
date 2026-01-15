@@ -24,6 +24,7 @@ import {
   XIcon,
   FileText,
 } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 // Mock useAuth for standalone example (Remove in your actual project)
 /*
@@ -97,6 +98,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
             ) : user ? (
               <>
                 {commonNavLinks()}
+                <ThemeToggle />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2">
@@ -121,7 +123,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className="my-2" />
                     <DropdownMenuGroup>
-                       {/* Example additional items:
+                      {/* Example additional items:
                        <DropdownMenuItem asChild className="cursor-pointer hover:!bg-slate-100">
                         <Link to="/profile" className="flex items-center w-full">
                           <UserCircle className="mr-2 h-4 w-4 text-slate-600" />
@@ -168,28 +170,28 @@ const Layout = ({ children }: { children: ReactNode }) => {
               <SheetContent side="right" className="w-[300px] sm:w-[340px] p-0 bg-white">
                 <div className="flex flex-col h-full">
                   <div className="flex items-center justify-between p-6 border-b border-slate-200">
-                     <Link to="/" className="flex items-center gap-2 text-xl font-semibold text-slate-800" onClick={() => setIsMobileMenuOpen(false)}>
-                        <FileText className="h-6 w-6 text-indigo-600" />
-                        <span>Resume Analyzer</span>
-                      </Link>
+                    <Link to="/" className="flex items-center gap-2 text-xl font-semibold text-slate-800" onClick={() => setIsMobileMenuOpen(false)}>
+                      <FileText className="h-6 w-6 text-indigo-600" />
+                      <span>Resume Analyzer</span>
+                    </Link>
                     <SheetClose asChild>
-                       <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-slate-100">
-                          <XIcon className="h-5 w-5" />
-                          <span className="sr-only">Close menu</span>
-                        </Button>
+                      <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-slate-100">
+                        <XIcon className="h-5 w-5" />
+                        <span className="sr-only">Close menu</span>
+                      </Button>
                     </SheetClose>
                   </div>
-                  
+
                   <nav className="flex-grow p-6 space-y-3">
                     {isLoading ? (
-                       <div className="space-y-3">
-                          <div className="h-8 w-full animate-pulse rounded-md bg-slate-200"></div>
-                          <div className="h-8 w-full animate-pulse rounded-md bg-slate-200"></div>
-                       </div>
+                      <div className="space-y-3">
+                        <div className="h-8 w-full animate-pulse rounded-md bg-slate-200"></div>
+                        <div className="h-8 w-full animate-pulse rounded-md bg-slate-200"></div>
+                      </div>
                     ) : user ? (
                       <>
                         <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
-                           <p className="text-sm font-medium leading-none text-slate-800">
+                          <p className="text-sm font-medium leading-none text-slate-800">
                             {user.user_metadata?.full_name || user.email?.split('@')[0]}
                           </p>
                           <p className="text-xs leading-none text-slate-500 mt-1">
@@ -210,10 +212,10 @@ const Layout = ({ children }: { children: ReactNode }) => {
                         </Link>
                         */}
                         <div className="pt-4 border-t border-slate-200">
-                            <Button variant="ghost" onClick={() => { handleSignOut(); setIsMobileMenuOpen(false); }} className="w-full justify-start text-base text-red-600 hover:bg-red-50 hover:text-red-700">
-                                <LogOut className="mr-2 h-4 w-4" />
-                                Log out
-                            </Button>
+                          <Button variant="ghost" onClick={() => { handleSignOut(); setIsMobileMenuOpen(false); }} className="w-full justify-start text-base text-red-600 hover:bg-red-50 hover:text-red-700">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Log out
+                          </Button>
                         </div>
                       </>
                     ) : (
