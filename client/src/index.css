@@ -1,4 +1,3 @@
-
 @import "tailwindcss";
 
 @theme {
@@ -37,12 +36,23 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
 
   @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
+    from {
+      height: 0;
+    }
+
+    to {
+      height: var(--radix-accordion-content-height);
+    }
   }
+
   @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+
+    to {
+      height: 0;
+    }
   }
 }
 
@@ -114,7 +124,60 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .animate-staggered>* {
+    --stagger-delay: 50ms;
+    animation: slide-up 0.4s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-staggered>*:nth-child(1) {
+    animation-delay: calc(var(--stagger-delay) * 1);
+  }
+
+  .animate-staggered>*:nth-child(2) {
+    animation-delay: calc(var(--stagger-delay) * 2);
+  }
+
+  .animate-staggered>*:nth-child(3) {
+    animation-delay: calc(var(--stagger-delay) * 3);
+  }
+
+  .animate-staggered>*:nth-child(4) {
+    animation-delay: calc(var(--stagger-delay) * 4);
+  }
+
+  .animate-staggered>*:nth-child(5) {
+    animation-delay: calc(var(--stagger-delay) * 5);
+  }
+
+  .animate-staggered>*:nth-child(6) {
+    animation-delay: calc(var(--stagger-delay) * 6);
+  }
+
+  .animate-staggered>*:nth-child(7) {
+    animation-delay: calc(var(--stagger-delay) * 7);
+  }
+
+  .animate-staggered>*:nth-child(8) {
+    animation-delay: calc(var(--stagger-delay) * 8);
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

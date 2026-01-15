@@ -33,52 +33,54 @@ function App() {
         <ErrorProvider>
           <Router>
             <Layout>
-              <Routes>
-                {/* Public Routes */}
-                <Route
-                  path="/login"
-                  element={<LoginPage />}
-                  errorElement={<RouteErrorBoundary />}
-                />
-                <Route
-                  path="/signup"
-                  element={<SignupPage />}
-                  errorElement={<RouteErrorBoundary />}
-                />
+              <div className="animate-in fade-in duration-500">
+                <Routes>
+                  {/* Public Routes */}
+                  <Route
+                    path="/login"
+                    element={<LoginPage />}
+                    errorElement={<RouteErrorBoundary />}
+                  />
+                  <Route
+                    path="/signup"
+                    element={<SignupPage />}
+                    errorElement={<RouteErrorBoundary />}
+                  />
 
-                {/* Protected Routes */}
-                <Route
-                  path="/"
-                  element={<ProtectedRoute><HomePage /></ProtectedRoute>}
-                  errorElement={<RouteErrorBoundary />}
-                />
-                <Route
-                  path="/jobs"
-                  element={<ProtectedRoute><JobsListPage /></ProtectedRoute>}
-                  errorElement={<RouteErrorBoundary />}
-                />
-                <Route
-                  path="/jobs/new"
-                  element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>}
-                  errorElement={<RouteErrorBoundary />}
-                />
-                <Route
-                  path="/jobs/:jobId"
-                  element={<ProtectedRoute><JobDetailPage /></ProtectedRoute>}
-                  errorElement={<RouteErrorBoundary />}
-                />
+                  {/* Protected Routes */}
+                  <Route
+                    path="/"
+                    element={<ProtectedRoute><HomePage /></ProtectedRoute>}
+                    errorElement={<RouteErrorBoundary />}
+                  />
+                  <Route
+                    path="/jobs"
+                    element={<ProtectedRoute><JobsListPage /></ProtectedRoute>}
+                    errorElement={<RouteErrorBoundary />}
+                  />
+                  <Route
+                    path="/jobs/new"
+                    element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>}
+                    errorElement={<RouteErrorBoundary />}
+                  />
+                  <Route
+                    path="/jobs/:jobId"
+                    element={<ProtectedRoute><JobDetailPage /></ProtectedRoute>}
+                    errorElement={<RouteErrorBoundary />}
+                  />
 
-                {/* 404 - Not Found */}
-                <Route
-                  path="*"
-                  element={<RouteErrorBoundary />}
-                />
-                <Route
-                  path="/dashboard"
-                  element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
-                  errorElement={<RouteErrorBoundary />}
-                />
-              </Routes>
+                  {/* 404 - Not Found */}
+                  <Route
+                    path="*"
+                    element={<RouteErrorBoundary />}
+                  />
+                  <Route
+                    path="/dashboard"
+                    element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
+                    errorElement={<RouteErrorBoundary />}
+                  />
+                </Routes>
+              </div>
             </Layout>
           </Router>
         </ErrorProvider>

@@ -148,7 +148,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
           size="sm"
           onClick={() => setShowComparison(true)}
           disabled={selectedIds.length === 0}
-          className="flex items-center space-x-1 border-emerald-200 hover:bg-emerald-50 text-emerald-700"
+          className="flex items-center space-x-1 border-emerald-200 hover:bg-emerald-50 text-emerald-700 transition-all hover:scale-105 active:scale-95 shadow-sm"
         >
           <Users className="h-4 w-4" />
           <span>Compare {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
@@ -158,7 +158,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
           size="sm"
           onClick={handleExport}
           disabled={isLoading || isExporting || candidates.length === 0}
-          className="flex items-center space-x-1 border-violet-200 hover:bg-violet-50 text-violet-700"
+          className="flex items-center space-x-1 border-violet-200 hover:bg-violet-50 text-violet-700 transition-all hover:scale-105 active:scale-95 shadow-sm"
         >
           {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
@@ -202,11 +202,11 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
                 <TableHead className="text-right">Details</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="animate-staggered">
               {candidates.map((c, i) => (
                 <TableRow
                   key={c.candidateId}
-                  className={`${selectedIds.includes(c.candidateId) ? 'bg-emerald-50/50' : 'odd:bg-white even:bg-gray-50'} hover:bg-gray-100 transition`}
+                  className={`${selectedIds.includes(c.candidateId) ? 'bg-emerald-500/10' : ''} hover:bg-muted/50 transition-all duration-300 cursor-default group`}
                 >
                   <TableCell>
                     <div className="flex items-center justify-center">
