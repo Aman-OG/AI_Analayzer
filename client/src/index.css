@@ -93,13 +93,13 @@
     --background: #020617;
     --foreground: #f8fafc;
 
-    --card: #0f172a;
+    --card: #0b1120;
     --card-foreground: #f8fafc;
 
-    --popover: #0f172a;
+    --popover: #0b1120;
     --popover-foreground: #f8fafc;
 
-    --primary: #6366f1;
+    --primary: #818cf8;
     --primary-foreground: #ffffff;
 
     --secondary: #1e293b;
@@ -116,7 +116,17 @@
 
     --border: #1e293b;
     --input: #1e293b;
-    --ring: #6366f1;
+    --ring: #818cf8;
+  }
+}
+
+@layer utilities {
+  .glow-primary {
+    box-shadow: 0 0 20px -5px var(--primary);
+  }
+
+  .glass {
+    @apply bg-card/40 backdrop-blur-md border border-border/10;
   }
 }
 

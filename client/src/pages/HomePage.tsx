@@ -36,7 +36,7 @@ export default function HomePage() {
   return (
     <div className="container mx-auto py-16 px-4 space-y-20">
       {/* Hero Section */}
-      <section className="relative overflow-hidden text-center bg-gradient-to-br from-teal-50 via-indigo-50 to-purple-50 p-12 rounded-2xl shadow-2xl backdrop-blur-sm transition-transform duration-700 ease-in-out hover:scale-102">
+      <section className="relative overflow-hidden text-center bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50 dark:from-indigo-950/20 dark:via-background dark:to-purple-950/20 p-12 rounded-2xl shadow-xl border border-border/50 backdrop-blur-sm transition-all duration-700 hover:shadow-2xl hover:shadow-indigo-500/10">
         <h1 className="text-4xl md:text-6xl font-extrabold mb-6 text-gray-900 leading-tight px-2">
           Welcome,{' '}
           <span className="text-indigo-600 dark:text-teal-300">
@@ -78,9 +78,9 @@ export default function HomePage() {
           {featureData.map((feature, idx) => (
             <div
               key={idx}
-              className="transition-transform duration-300 ease-out transform hover:scale-105"
+              className="transition-all duration-500 ease-out transform hover:scale-105 hover:-translate-y-2"
             >
-              <Card className="h-full text-center p-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-lg border border-gray-200 dark:border-gray-700 rounded-2xl">
+              <Card className="h-full text-center p-8 glass shadow-lg rounded-2xl transition-all duration-300 hover:shadow-indigo-500/20">
                 <CardHeader>
                   {feature.icon}
                   <CardTitle className="text-2xl font-semibold mt-2 text-gray-900 dark:text-white">
