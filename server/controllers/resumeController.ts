@@ -210,3 +210,55 @@ export const getResumeStatus = catchAsync(async (req: any, res: Response, next: 
         }
     });
 });
+
+/**
+ * @desc    Export candidates for a job as CSV
+ * @route   GET /api/resumes/job/:jobId/export
+ * @access  Private
+ */
+export const exportCandidatesCsv = catchAsync(async (req: any, res: Response, next: NextFunction) => {
+    const { jobId } = req.params;
+    const userId = req.user.id;
+
+    // 1. Validate Job Ownership
+    const job = await JobDescription.findById(jobId);
+    if (!job) {
+        return next(new AppError('Job not found.', 404));
+    }
+    if (job.userId.toString() !== userId) {
+        return next(new AppError('You are not authorized to export candidates for this job.', 403));
+    }
+
+    // 2. Fetch All Processed Resumes for this Job
+    const resumes = await Resume.find({
+        jobId: jobId,
+        processingStatus: 'completed',
+    }).sort({ score: -1 });
+
+    if (resumes.length === 0) {
+        return next(new AppError('No processed candidates available for export.', 400));
+    }
+
+    // 3. Generate CSV content
+    const header = ['Rank', 'Score', 'Filename', 'Years of Experience', 'Skills', 'Justification'];
+    const rows = resumes.map((doc: any, index: number) => [
+        index + 1,
+        doc.score,
+        `"${doc.originalFilename.replace(/"/g, '""')}"`,
+        `"${(doc.geminiAnalysis?.yearsExperience || 'N/A').toString().replace(/"/g, '""')}"`,
+        `"${(doc.geminiAnalysis?.skills || []).join(', ').replace(/"/g, '""')}"`,
+        `"${(doc.geminiAnalysis?.justification || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = [
+        header.join(','),
+        ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    // 4. Send File
+    const filename = `candidates_${job.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.status(200).send(csvContent);
+});

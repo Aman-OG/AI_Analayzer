@@ -2,7 +2,8 @@ import express from 'express';
 import {
     uploadResume,
     getCandidatesForJob,
-    getResumeStatus
+    getResumeStatus,
+    exportCandidatesCsv
 } from '../controllers/resumeController';
 import { protect } from '../middleware/authMiddleware';
 import upload, { handleMulterError } from '../middleware/uploadMiddleware';
@@ -31,11 +32,11 @@ router.get(
     getCandidatesForJob
 );
 
-// Route to check status of a specific resume
+// Route to export candidates as CSV
 router.get(
-    '/:resumeId/status',
+    '/job/:jobId/export',
     protect,
-    getResumeStatus
+    exportCandidatesCsv
 );
 
 export default router;
