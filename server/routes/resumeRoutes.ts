@@ -3,7 +3,8 @@ import {
     uploadResume,
     getCandidatesForJob,
     getResumeStatus,
-    exportCandidatesCsv
+    exportCandidatesCsv,
+    getRecruiterStats
 } from '../controllers/resumeController';
 import { protect } from '../middleware/authMiddleware';
 import upload, { handleMulterError } from '../middleware/uploadMiddleware';
@@ -30,6 +31,13 @@ router.get(
     '/job/:jobId/candidates',
     protect,
     getCandidatesForJob
+);
+
+// Route to get recruiter stats
+router.get(
+    '/stats',
+    protect,
+    getRecruiterStats
 );
 
 // Route to export candidates as CSV

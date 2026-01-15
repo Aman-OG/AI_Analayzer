@@ -7,10 +7,7 @@ import SignupPage from './pages/SignupPage';
 import JobsListPage from './pages/JobsListPage';
 import JobDetailPage from './pages/JobDetailPage';
 import CreateJobPage from './pages/CreateJobPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import { ErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
-import { ErrorProvider } from './contexts/ErrorContext';
-import { useAuth } from './contexts/AuthContext';
+import DashboardPage from './pages/DashboardPage';
 
 function App() {
   const { isLoading } = useAuth();
@@ -73,7 +70,8 @@ function App() {
               />
               <Route
                 path="/dashboard"
-                element={<Navigate to="/jobs" replace />}
+                element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
+                errorElement={<RouteErrorBoundary />}
               />
             </Routes>
           </Layout>

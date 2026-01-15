@@ -55,6 +55,11 @@ const resumeService = {
     link.click();
     link.remove();
   },
+
+  getRecruiterStats: async (): Promise<any> => {
+    const response = await apiClient.get('/resumes/stats');
+    return response.data;
+  }
 };
 
 export default resumeService;

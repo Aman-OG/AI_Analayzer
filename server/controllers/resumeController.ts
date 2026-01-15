@@ -212,6 +212,53 @@ export const getResumeStatus = catchAsync(async (req: any, res: Response, next: 
 });
 
 /**
+ * @desc    Get recruitment statistics for the recruiter
+ * @route   GET /api/resumes/stats
+ * @access  Private
+ */
+export const getRecruiterStats = catchAsync(async (req: any, res: Response, next: NextFunction) => {
+    const userId = req.user.id;
+
+    // 1. Get Job Stats
+    const totalJobs = await JobDescription.countDocuments({ userId });
+
+    // 2. Get Resume Stats
+    const resumes = await Resume.find({ userId });
+    const totalResumes = resumes.length;
+
+    const completedResumes = resumes.filter(r => r.processingStatus === 'completed');
+    const averageScore = completedResumes.length > 0
+        ? (completedResumes.reduce((acc, curr) => acc + (curr.score || 0), 0) / completedResumes.length).toFixed(1)
+        : 0;
+
+    // 3. Status Distribution
+    const statusDistribution = {
+        uploaded: resumes.filter(r => r.processingStatus === 'uploaded').length,
+        processing: resumes.filter(r => r.processingStatus === 'processing').length,
+        completed: completedResumes.length,
+        failed: resumes.filter(r => r.processingStatus === 'failed').length,
+    };
+
+    // 4. Score Distribution (0-4, 5-7, 8-10)
+    const scoreDistribution = {
+        low: completedResumes.filter(r => (r.score || 0) < 5).length,
+        mid: completedResumes.filter(r => (r.score || 0) >= 5 && (r.score || 0) < 8).length,
+        high: completedResumes.filter(r => (r.score || 0) >= 8).length,
+    };
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            totalJobs,
+            totalResumes,
+            averageScore: parseFloat(averageScore as string),
+            statusDistribution,
+            scoreDistribution
+        }
+    });
+});
+
+/**
  * @desc    Export candidates for a job as CSV
  * @route   GET /api/resumes/job/:jobId/export
  * @access  Private
