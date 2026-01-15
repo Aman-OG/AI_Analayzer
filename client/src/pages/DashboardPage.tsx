@@ -89,10 +89,10 @@ export default function DashboardPage() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="border-l-4 border-l-blue-500 shadow-sm transition-all hover:shadow-md">
+                <Card className="bg-card/50 backdrop-blur-md border-l-4 border-l-blue-500 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Total Jobs</CardTitle>
-                        <Briefcase className="h-5 w-5 text-blue-500" />
+                        <Briefcase className="h-5 w-5 text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{stats.totalJobs}</div>
@@ -100,10 +100,10 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-violet-500 shadow-sm transition-all hover:shadow-md">
+                <Card className="bg-card/50 backdrop-blur-md border-l-4 border-l-violet-500 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Total Resumes</CardTitle>
-                        <Users className="h-5 w-5 text-violet-500" />
+                        <Users className="h-5 w-5 text-violet-500 drop-shadow-[0_0_8px_rgba(139,92,246,0.4)]" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{stats.totalResumes}</div>
@@ -111,10 +111,10 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-emerald-500 shadow-sm transition-all hover:shadow-md">
+                <Card className="bg-card/50 backdrop-blur-md border-l-4 border-l-emerald-500 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Avg. Match Score</CardTitle>
-                        <TrendingUp className="h-5 w-5 text-emerald-500" />
+                        <TrendingUp className="h-5 w-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{stats.averageScore}/10</div>
@@ -122,10 +122,10 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-amber-500 shadow-sm transition-all hover:shadow-md">
+                <Card className="bg-card/50 backdrop-blur-md border-l-4 border-l-amber-500 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Success Rate</CardTitle>
-                        <CheckCircle2 className="h-5 w-5 text-amber-500" />
+                        <CheckCircle2 className="h-5 w-5 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">
@@ -140,7 +140,7 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Pipeline Status Chart */}
-                <Card className="shadow-sm">
+                <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Clock className="h-5 w-5 text-violet-500" />
@@ -177,7 +177,7 @@ export default function DashboardPage() {
                 </Card>
 
                 {/* Candidate Quality Chart */}
-                <Card className="shadow-sm">
+                <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-emerald-500" />

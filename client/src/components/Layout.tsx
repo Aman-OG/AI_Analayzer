@@ -81,9 +81,9 @@ const Layout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur-sm shadow-sm">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md shadow-sm dark:shadow-indigo-500/5">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-800 hover:text-indigo-600 transition-colors">
+          <Link to="/" className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground hover:text-indigo-600 transition-all duration-300 drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]">
             <FileText className="h-7 w-7 text-indigo-600" />
             <span>Resume Analyzer</span>
           </Link>
