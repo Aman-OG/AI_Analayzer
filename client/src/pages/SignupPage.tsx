@@ -70,8 +70,12 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-6">
-      <div className="max-w-md w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-500 p-6 relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full" />
+
+      <div className="max-w-md w-full glass p-8 shadow-2xl rounded-2xl relative z-10 animate-in fade-in zoom-in duration-500">
         <CardHeader className="text-center mb-6">
           <CardTitle className="text-4xl font-bold text-indigo-600 dark:text-teal-300">
             Join the Hiring Hub
@@ -96,11 +100,10 @@ export default function SignupPage() {
                 type="email"
                 placeholder="you@company.com"
                 autoFocus
-                className={`mt-1 h-12 px-4 bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 border rounded-lg shadow-sm ${
-                  errors.email
+                className={`mt-1 h-12 px-4 bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 border rounded-lg shadow-sm ${errors.email
                     ? 'border-red-500 focus-visible:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus-visible:ring-indigo-500 dark:focus-visible:ring-teal-400'
-                }`}
+                  }`}
                 {...register('email')}
               />
               {errors.email && (
@@ -135,11 +138,10 @@ export default function SignupPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
-                  className={`mt-1 h-12 px-4 pr-10 w-full bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 border rounded-lg shadow-sm ${
-                    errors.password
+                  className={`mt-1 h-12 px-4 pr-10 w-full bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 border rounded-lg shadow-sm ${errors.password
                       ? 'border-red-500 focus-visible:ring-red-500'
                       : 'border-gray-300 dark:border-gray-600 focus-visible:ring-indigo-500 dark:focus-visible:ring-teal-400'
-                  }`}
+                    }`}
                   {...register('password')}
                 />
                 <button

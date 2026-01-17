@@ -117,9 +117,9 @@ export default function JobDetailPage() {
   return (
     <div className="container mx-auto max-w-5xl py-8 px-4 sm:px-6 lg:px-8 space-y-10">
       <Button
-        variant="outline" // Changed from ghost for a bit more presence
+        variant="outline"
         asChild
-        className="text-gray-700 hover:text-violet-700 hover:border-violet-300 transition group"
+        className="border-border/50 hover:bg-muted/50 transition-all hover:scale-105 active:scale-95 group"
       >
         <Link to="/jobs" className="flex items-center">
           <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
@@ -128,7 +128,7 @@ export default function JobDetailPage() {
       </Button>
 
       {/* Job Details Card */}
-      <Card className="shadow-lg border-gray-200/80">
+      <Card className="glass shadow-xl border-border/50">
         <CardHeader className="border-b border-gray-100 pb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 gap-2 mb-1">
             <Briefcase className="h-8 w-8 text-violet-600 hidden sm:block" />
@@ -203,7 +203,7 @@ export default function JobDetailPage() {
       </Card>
 
       {/* Resume Upload Card */}
-      <Card className="shadow-lg border-gray-200/80">
+      <Card className="glass shadow-xl border-border/50">
         <CardHeader>
           <div className="flex items-center space-x-3">
             <UploadCloud className="h-7 w-7 text-violet-600" />
@@ -224,7 +224,7 @@ export default function JobDetailPage() {
       </Card>
 
       {/* Candidate List Card */}
-      <Card className="shadow-lg border-gray-200/80">
+      <Card className="glass shadow-xl border-border/50">
         <CardHeader>
           <div className="flex items-center space-x-3">
             <Users className="h-7 w-7 text-violet-600" />
