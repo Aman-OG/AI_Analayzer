@@ -140,7 +140,7 @@ Don't forget to give the project a star! Thanks again!
 
 ## 📧 Contact
 
-Khalid Mohammed - dreambigatall1@gmail.com
+Aman Baye - amanbaye4@gmail.com
 
 Project Link: https://ai-resume-analayzer-1.onrender.com/
 
