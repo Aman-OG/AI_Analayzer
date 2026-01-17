@@ -147,15 +147,15 @@ const JobsListPage = () => {
 
   // Main page content
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 py-8 px-4 md:px-8 lg:px-12 border-1 border-gray-200 rounded-lg">
-      <main className="container mx-auto space-y-8">
+    <div className="min-h-screen bg-background transition-colors duration-500 py-8 px-4 md:px-8 lg:px-12 border-1 border-border/50 rounded-lg">
+      <main className="container mx-auto space-y-8 animate-in fade-in duration-700">
         {/* Header Section */}
         <header className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10 pb-6 border-b border-slate-200">
-          <div className="flex items-center gap-4">
-            <Briefcase className="h-10 w-10 text-indigo-600" />
+          <div className="flex items-center gap-4 group">
+            <Briefcase className="h-10 w-10 text-primary transition-transform group-hover:scale-110 duration-300" />
             <div>
-              <h1 className="text-4xl font-bold tracking-tight text-slate-800">Job Postings</h1>
-              <p className="text-slate-500 text-sm">Manage your company's open positions.</p>
+              <h1 className="text-4xl font-bold tracking-tight text-foreground">Job Postings</h1>
+              <p className="text-muted-foreground text-sm font-medium">Manage your company's open positions.</p>
             </div>
           </div>
           <Dialog
@@ -163,8 +163,8 @@ const JobsListPage = () => {
             onOpenChange={setIsCreateJobDialogOpen}
           >
             <DialogTrigger asChild>
-              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg px-6 py-3">
-                <PlusCircle className="mr-2 h-5 w-5" />
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/20 transition-all hover:scale-105 active:scale-95 rounded-xl px-8 py-6 text-lg font-bold">
+                <PlusCircle className="mr-2 h-6 w-6" />
                 Create New Job
               </Button>
             </DialogTrigger>
@@ -221,7 +221,7 @@ const JobsListPage = () => {
                 placeholder="Search by job title..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full md:w-1/2 lg:w-1/3 pl-10 pr-4 py-2.5 rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm"
+                className="w-full md:w-1/2 lg:w-1/3 pl-10 pr-4 py-6 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm focus:ring-2 focus:ring-primary/20 shadow-sm transition-all text-lg"
                 disabled={isLoading}
                 aria-label="Search job postings by title"
               />
@@ -268,10 +268,10 @@ const JobsListPage = () => {
             )}
           </Card>
         ) : (
-          <Card className="shadow-xl border-slate-200 bg-white rounded-xl overflow-hidden">
-            <CardHeader className="px-6 py-5 border-b border-slate-200">
-              <CardTitle className="text-xl font-semibold text-slate-800">Manage Your Postings</CardTitle>
-              <CardDescription className="text-slate-500 text-sm">
+          <Card className="glass shadow-2xl border-border/50 rounded-2xl overflow-hidden">
+            <CardHeader className="px-8 py-6 border-b border-border/40 bg-muted/20">
+              <CardTitle className="text-2xl font-bold text-foreground">Manage Your Postings</CardTitle>
+              <CardDescription className="text-muted-foreground text-sm font-medium">
                 View, manage, or delete your active job postings below.
               </CardDescription>
             </CardHeader>
@@ -293,7 +293,7 @@ const JobsListPage = () => {
                       </TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody className="divide-y divide-slate-200">
+                  <TableBody className="divide-y divide-border/40 animate-staggered">
                     {filteredJobs.map(job => (
                       <TableRow key={job._id} className="hover:bg-slate-50/50 transition-colors duration-150">
                         <TableCell
