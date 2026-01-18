@@ -246,17 +246,17 @@ const Layout = ({ children }: { children: ReactNode }) => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white">
+      <footer className="border-t border-border bg-background">
         <div className="container mx-auto px-4 py-8 text-center sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} Resume Analyzer Inc. All rights reserved.
             </p>
             <div className="flex space-x-4">
-              <Link to="/privacy-policy" className="text-sm text-slate-500 hover:text-indigo-600 transition-colors">
+              <Link to="/privacy-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Privacy Policy
               </Link>
-              <Link to="/terms-of-service" className="text-sm text-slate-500 hover:text-indigo-600 transition-colors">
+              <Link to="/terms-of-service" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Terms of Service
               </Link>
             </div>
