@@ -1,6 +1,7 @@
 // src/components/Resume/ProcessingCard.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ProcessingStatus, { ProcessingStatusType } from "./ProcessingStatus";
+import ProcessingStatus from "./ProcessingStatus";
+import type { ProcessingStatusType } from "./ProcessingStatus";
 import StatusTimeline from "./StatusTimeline";
 import { FileText } from "lucide-react";
 
