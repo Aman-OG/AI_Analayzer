@@ -2,7 +2,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { LoginSchema, type LoginFormData } from '@/lib/validators';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +28,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Redirect to home if already logged in
+  useEffect(() => {
+    if (session) {
+      navigate('/');
+    }
+  }, [session, navigate]);
+
   const {
     register,
     handleSubmit,
@@ -36,11 +43,6 @@ export default function LoginPage() {
     resolver: zodResolver(LoginSchema),
     defaultValues: { email: '', password: '' },
   });
-
-  if (session) {
-    navigate('/');
-    return null;
-  }
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -101,8 +103,8 @@ export default function LoginPage() {
                 placeholder="you@company.com"
                 autoFocus
                 className={`mt-1 h-12 px-4 bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 border rounded-lg shadow-sm ${errors.email
-                    ? 'border-red-500 focus-visible:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus-visible:ring-indigo-500 dark:focus-visible:ring-teal-400'
+                  ? 'border-red-500 focus-visible:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus-visible:ring-indigo-500 dark:focus-visible:ring-teal-400'
                   }`}
                 {...register('email')}
               />
@@ -139,8 +141,8 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   className={`mt-1 h-12 px-4 pr-10 w-full bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 border rounded-lg shadow-sm ${errors.password
-                      ? 'border-red-500 focus-visible:ring-red-500'
-                      : 'border-gray-300 dark:border-gray-600 focus-visible:ring-indigo-500 dark:focus-visible:ring-teal-400'
+                    ? 'border-red-500 focus-visible:ring-red-500'
+                    : 'border-gray-300 dark:border-gray-600 focus-visible:ring-indigo-500 dark:focus-visible:ring-teal-400'
                     }`}
                   {...register('password')}
                 />
