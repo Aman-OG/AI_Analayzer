@@ -1,10 +1,14 @@
 // server/server.js
+console.log('DEBUG: Starting server.js');
 const express = require('express');
+const path = require('path');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const connectDB = require('./config/db'); // We'll create this next
-const { initSupabase } = require('./config/supabaseClient'); // We'll create this
-const { initGemini } = require('./config/gemini'); // We'll create this
+console.log('DEBUG: Requiring config modules');
+const connectDB = require('./config/db');
+const { initSupabase } = require('./config/supabaseClient');
+const { initGemini } = require('./config/gemini');
+console.log('DEBUG: Config modules required');
 
 // Security middleware
 const {

@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { AppError, NetworkError, ValidationError } from '@/lib/errors';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -20,7 +20,7 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
+  (_err) => {
     return Promise.reject(new NetworkError('Failed to send request. Please check your connection.'));
   }
 );

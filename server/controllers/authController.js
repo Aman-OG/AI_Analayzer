@@ -188,11 +188,3 @@ module.exports = {
   logoutUser,
   refreshToken,
 };
-
-
-module.exports = {
-  signupUser,
-  loginUser,
-  getUser,
-  logoutUser,
-};

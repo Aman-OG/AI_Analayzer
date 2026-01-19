@@ -69,7 +69,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // MongoDB sanitization
-app.use(mongoSanitizeConfig);
+// app.use(mongoSanitizeConfig);
 app.use(preventApiKeyLeakage);
 
 // Apply general rate limiting
@@ -86,7 +86,7 @@ app.use('/api/resumes', resumeRoutes);
 app.use('/api/jobs', jobRoutes);
 
 // Unhandled Routes
-app.all('*', (req: Request, res: Response, next: NextFunction) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
     next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 

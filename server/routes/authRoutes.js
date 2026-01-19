@@ -1,6 +1,7 @@
 // server/routes/authRoutes.js
 const express = require('express');
 const { signupUser, loginUser, getUser, logoutUser, refreshToken } = require('../controllers/authController');
+
 const { protect } = require('../middleware/authMiddleware');
 const { authLimiter } = require('../middleware/rateLimitMiddleware');
 const validate = require('../middleware/validationMiddleware');
