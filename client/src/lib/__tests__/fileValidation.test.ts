@@ -95,7 +95,7 @@ describe('File Validation', () => {
             const file = new File(['test'], 'resume\0.pdf', { type: 'application/pdf' });
             const result = validateFileName(file);
             expect(result.isValid).toBe(false);
-            expect(result.error).toContain('invalid characters');
+            expect(result.error).toContain('Invalid file name');
         });
 
         it('should fail for excessively long filename', () => {
