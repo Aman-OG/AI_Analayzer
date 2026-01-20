@@ -36,6 +36,7 @@ apiClient.interceptors.response.use(
       // Handle unauthorized across the app
       if (status === 401 && !window.location.pathname.includes('/login')) {
         console.warn('Session expired, redirecting to login.');
+        // We only want to trigger this if we're not already on the login page
         supabase.auth.signOut();
         window.location.href = '/login';
         return Promise.reject(new AppError('Session expired. Please log in again.', 'UNAUTHORIZED', 401));

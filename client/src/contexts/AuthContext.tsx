@@ -43,8 +43,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    // Session and user will be set to null by onAuthStateChange
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Supabase signOut error:', error);
+    } finally {
+      // Force clear local state in case Supabase fails to clear it (e.g. 403 Forbidden)
+      setSession(null);
+      setUser(null);
+    }
   };
 
   const refreshSession = async () => {
