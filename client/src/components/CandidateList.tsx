@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Star, AlertCircle, RefreshCcw, ChevronDown, Download, Loader2 } from 'lucide-react';
+import { Star, AlertCircle, RefreshCcw, ChevronDown, Download, Loader2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TableSkeleton } from '@/components/Loading';
 import { useError } from '@/contexts/ErrorContext';
@@ -90,7 +90,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
 
   const renderEducation = (edus?: GeminiEducation[]) => {
     if (!edus?.length) {
-      return <span className="italic text-gray-500">Not specified</span>;
+      return <span className="italic text-muted-foreground">Not specified</span>;
     }
     return (
       <ul className="list-disc list-inside space-y-0.5 text-sm">
@@ -133,7 +133,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
 
   if (!candidates.length) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-muted-foreground">
         <p>No candidates analyzed yet.</p>
         <p className="text-sm">Upload resumes to see them here.</p>
       </div>
@@ -148,7 +148,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
           size="sm"
           onClick={() => setShowComparison(true)}
           disabled={selectedIds.length === 0}
-          className="flex items-center space-x-1 border-emerald-200 hover:bg-emerald-50 text-emerald-700 transition-all hover:scale-105 active:scale-95 shadow-sm"
+          className="flex items-center space-x-1 border-primary/20 hover:bg-primary/10 text-primary transition-all hover:scale-105 active:scale-95 shadow-sm"
         >
           <Users className="h-4 w-4" />
           <span>Compare {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
@@ -158,7 +158,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
           size="sm"
           onClick={handleExport}
           disabled={isLoading || isExporting || candidates.length === 0}
-          className="flex items-center space-x-1 border-violet-200 hover:bg-violet-50 text-violet-700 transition-all hover:scale-105 active:scale-95 shadow-sm"
+          className="flex items-center space-x-1 border-primary/20 hover:bg-primary/10 text-primary transition-all hover:scale-105 active:scale-95 shadow-sm"
         >
           {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
@@ -181,13 +181,13 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
         candidates={selectedCandidates}
       />
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <Accordion type="single" collapsible>
           <Table>
             <TableCaption className="mt-4">
               Analyzed candidates for this job
             </TableCaption>
-            <TableHeader className="bg-gray-50 sticky top-0">
+            <TableHeader className="bg-muted/50 sticky top-0">
               <TableRow>
                 <TableHead className="w-[40px]">
                   <div className="flex items-center justify-center">
@@ -206,13 +206,13 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
               {candidates.map((c, i) => (
                 <TableRow
                   key={c.candidateId}
-                  className={`${selectedIds.includes(c.candidateId) ? 'bg-emerald-500/10' : ''} hover:bg-muted/50 transition-all duration-300 cursor-default group`}
+                  className={`${selectedIds.includes(c.candidateId) ? 'bg-primary/10' : ''} hover:bg-muted/50 transition-all duration-300 cursor-default group`}
                 >
                   <TableCell>
                     <div className="flex items-center justify-center">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-600 cursor-pointer"
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
                         checked={selectedIds.includes(c.candidateId)}
                         onChange={() => toggleSelection(c.candidateId)}
                         disabled={!selectedIds.includes(c.candidateId) && selectedIds.length >= 3}
@@ -230,7 +230,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
                       <span className="font-semibold">{c.score}/10</span>
                       <Progress
                         value={c.score * 10}
-                        className="w-24 h-2 bg-gray-200"
+                        className="w-24 h-2"
                       />
                     </div>
                   </TableCell>
@@ -251,11 +251,11 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
                   </TableCell>
                   <TableCell className="text-right">
                     <AccordionItem value={`cand-${c.candidateId}`}>
-                      <AccordionTrigger className="flex items-center justify-end space-x-1 text-violet-600 hover:text-violet-800">
+                      <AccordionTrigger className="flex items-center justify-end space-x-1 text-primary hover:text-primary/80">
                         <span>View</span>
                         <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:-rotate-180" />
                       </AccordionTrigger>
-                      <AccordionContent className="p-4 bg-gray-50 rounded-md text-left space-y-4 max-w-md mx-auto break-words whitespace-pre-wrap">
+                      <AccordionContent className="p-4 bg-muted/30 rounded-md text-left space-y-4 max-w-md mx-auto break-words whitespace-pre-wrap">
                         <div>
                           <strong>Justification:</strong>
                           <p className="mt-1">{c.justification || 'None.'}</p>
@@ -286,7 +286,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
                             </ul>
                           </div>
                         ) : null}
-                        <p className="mt-2 text-xs text-gray-500">
+                        <p className="mt-2 text-xs text-muted-foreground">
                           File: {c.originalFilename}
                         </p>
                       </AccordionContent>

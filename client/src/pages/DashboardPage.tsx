@@ -79,61 +79,61 @@ export default function DashboardPage() {
 
     return (
         <div className="container mx-auto py-8 px-4 space-y-8 animate-in fade-in duration-500">
-            <div className="flex flex-col gap-2 border-b pb-6">
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900">Recruiter Dashboard</h1>
-                <p className="text-muted-foreground flex items-center gap-2">
-                    <BarChart2 className="h-4 w-4" />
+            <div className="flex flex-col gap-2 border-b border-border/50 pb-6 mb-8">
+                <h1 className="text-4xl font-bold tracking-tight text-foreground">Recruiter Dashboard</h1>
+                <p className="text-muted-foreground flex items-center gap-2 font-medium">
+                    <BarChart2 className="h-5 w-5 text-primary" />
                     High-level overview of your hiring metrics and candidate pipeline
                 </p>
             </div>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="bg-card/50 backdrop-blur-md border-l-4 border-l-blue-500 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] duration-300">
+                <Card className="glass border-l-4 border-l-blue-500 shadow-xl transition-all hover:shadow-blue-500/10 hover:scale-[1.02] duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Total Jobs</CardTitle>
+                        <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Jobs</CardTitle>
                         <Briefcase className="h-5 w-5 text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">{stats.totalJobs}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Active postings</p>
+                        <div className="text-3xl font-black text-foreground">{stats.totalJobs}</div>
+                        <p className="text-xs text-muted-foreground mt-1 font-medium">Active postings</p>
                     </CardContent>
                 </Card>
 
-                <Card className="bg-card/50 backdrop-blur-md border-l-4 border-l-violet-500 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] duration-300">
+                <Card className="glass border-l-4 border-l-violet-500 shadow-xl transition-all hover:shadow-violet-500/10 hover:scale-[1.02] duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Total Resumes</CardTitle>
+                        <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Resumes</CardTitle>
                         <Users className="h-5 w-5 text-violet-500 drop-shadow-[0_0_8px_rgba(139,92,246,0.4)]" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">{stats.totalResumes}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Processed by AI</p>
+                        <div className="text-3xl font-black text-foreground">{stats.totalResumes}</div>
+                        <p className="text-xs text-muted-foreground mt-1 font-medium">Processed by AI</p>
                     </CardContent>
                 </Card>
 
-                <Card className="bg-card/50 backdrop-blur-md border-l-4 border-l-emerald-500 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] duration-300">
+                <Card className="glass border-l-4 border-l-emerald-500 shadow-xl transition-all hover:shadow-emerald-500/10 hover:scale-[1.02] duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Avg. Match Score</CardTitle>
+                        <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Avg. Match Score</CardTitle>
                         <TrendingUp className="h-5 w-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">{stats.averageScore}/10</div>
-                        <p className="text-xs text-muted-foreground mt-1">Candidate quality</p>
+                        <div className="text-3xl font-black text-foreground">{stats.averageScore}/10</div>
+                        <p className="text-xs text-muted-foreground mt-1 font-medium">Candidate quality</p>
                     </CardContent>
                 </Card>
 
-                <Card className="bg-card/50 backdrop-blur-md border-l-4 border-l-amber-500 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] duration-300">
+                <Card className="glass border-l-4 border-l-amber-500 shadow-xl transition-all hover:shadow-amber-500/10 hover:scale-[1.02] duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Success Rate</CardTitle>
+                        <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Success Rate</CardTitle>
                         <CheckCircle2 className="h-5 w-5 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">
+                        <div className="text-3xl font-black text-foreground">
                             {stats.totalResumes > 0
                                 ? Math.round((stats.statusDistribution.completed / stats.totalResumes) * 100)
                                 : 0}%
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Processing efficiency</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-medium">Processing efficiency</p>
                     </CardContent>
                 </Card>
             </div>
@@ -210,12 +210,14 @@ export default function DashboardPage() {
             </div>
 
             {/* Info Alert */}
-            <div className="bg-violet-50 border border-violet-100 p-4 rounded-xl flex gap-3 items-start">
-                <TrendingUp className="h-5 w-5 text-violet-600 shrink-0 mt-0.5" />
+            <div className="glass border border-primary/20 p-6 rounded-2xl flex gap-4 items-start shadow-xl animate-in slide-in-from-bottom-4 duration-1000">
+                <div className="bg-primary/10 p-2 rounded-lg">
+                    <TrendingUp className="h-6 w-6 text-primary shrink-0" />
+                </div>
                 <div>
-                    <h4 className="font-bold text-violet-900 text-sm">Actionable Insight</h4>
-                    <p className="text-xs text-violet-700 leading-relaxed mt-1">
-                        Based on your pipeline, <strong>{Math.round((stats.scoreDistribution.high / (stats.statusDistribution.completed || 1)) * 100)}%</strong> of processed candidates match your top criteria. We recommend reviewing the "High Score" candidates first to optimize your time.
+                    <h4 className="font-bold text-foreground text-lg">Actionable Insight</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+                        Based on your pipeline, <span className="text-primary font-bold">{Math.round((stats.scoreDistribution.high / (stats.statusDistribution.completed || 1)) * 100)}%</span> of processed candidates match your top criteria. We recommend reviewing the <span className="text-emerald-500 font-bold">High Score</span> candidates first to optimize your time.
                     </p>
                 </div>
             </div>

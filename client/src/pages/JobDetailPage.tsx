@@ -129,17 +129,17 @@ export default function JobDetailPage() {
 
       {/* Job Details Card */}
       <Card className="glass shadow-xl border-border/50">
-        <CardHeader className="border-b border-gray-100 pb-6">
+        <CardHeader className="border-b border-border/40 pb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 gap-2 mb-1">
-            <Briefcase className="h-8 w-8 text-violet-600 hidden sm:block" />
-            <CardTitle className="text-2xl font-bold tracking-tight text-gray-800 sm:text-4xl">
+            <Briefcase className="h-8 w-8 text-primary hidden sm:block" />
+            <CardTitle className="text-2xl font-bold tracking-tight text-foreground sm:text-4xl">
               {job.title}
             </CardTitle>
           </div>
           {/* {job.companyName && ( // Display company name if available
             <p className="text-lg text-gray-600">{job.companyName} {job.location && `- ${job.location}`}</p>
           )} */}
-          <CardDescription className="text-sm text-gray-500 pt-2 flex items-center">
+          <CardDescription className="text-sm text-muted-foreground pt-2 flex items-center">
             <CalendarDays className="mr-2 h-4 w-4" />
             Posted on:{' '}
             {new Date(job.createdAt).toLocaleDateString('en-US', {
@@ -149,11 +149,11 @@ export default function JobDetailPage() {
         </CardHeader>
         <CardContent className="pt-6 space-y-8">
           <div>
-            <h3 className="font-semibold text-xl mb-3 text-gray-700 flex items-center">
-              <FileTextIcon className="mr-2 h-5 w-5 text-violet-500" />
+            <h3 className="font-semibold text-xl mb-3 text-foreground flex items-center">
+              <FileTextIcon className="mr-2 h-5 w-5 text-primary" />
               Full Description
             </h3>
-            <div className="prose prose-sm sm:prose-base max-w-none text-gray-600 whitespace-pre-wrap leading-relaxed">
+            <div className="prose prose-sm sm:prose-base max-w-none text-muted-foreground dark:text-foreground/80 whitespace-pre-wrap leading-relaxed">
               {job.descriptionText}
             </div>
           </div>
@@ -162,8 +162,8 @@ export default function JobDetailPage() {
 
           {job.mustHaveSkills && job.mustHaveSkills.length > 0 && (
             <div>
-              <h3 className="font-semibold text-xl mb-4 text-gray-700 flex items-center">
-                <ListChecks className="mr-2 h-5 w-5 text-violet-500" />
+              <h3 className="font-semibold text-xl mb-4 text-foreground flex items-center">
+                <ListChecks className="mr-2 h-5 w-5 text-primary" />
                 Must-Have Skills
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -182,8 +182,8 @@ export default function JobDetailPage() {
 
           {job.focusAreas && job.focusAreas.length > 0 && (
             <div>
-              <h3 className="font-semibold text-xl mb-4 text-gray-700 flex items-center">
-                <Target className="mr-2 h-5 w-5 text-violet-500" />
+              <h3 className="font-semibold text-xl mb-4 text-foreground flex items-center">
+                <Target className="mr-2 h-5 w-5 text-primary" />
                 Key Focus Areas
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -206,12 +206,12 @@ export default function JobDetailPage() {
       <Card className="glass shadow-xl border-border/50">
         <CardHeader>
           <div className="flex items-center space-x-3">
-            <UploadCloud className="h-7 w-7 text-violet-600" />
-            <CardTitle className="text-2xl font-semibold text-gray-800">
+            <UploadCloud className="h-7 w-7 text-primary" />
+            <CardTitle className="text-2xl font-semibold text-foreground">
               Upload Resumes
             </CardTitle>
           </div>
-          <CardDescription className="pt-1 text-gray-500">
+          <CardDescription className="pt-1 text-muted-foreground">
             Upload resumes (PDF, DOCX) to analyze candidate suitability for this job.
           </CardDescription>
         </CardHeader>
@@ -227,12 +227,12 @@ export default function JobDetailPage() {
       <Card className="glass shadow-xl border-border/50">
         <CardHeader>
           <div className="flex items-center space-x-3">
-            <Users className="h-7 w-7 text-violet-600" />
-            <CardTitle className="text-2xl font-semibold text-gray-800">
+            <Users className="h-7 w-7 text-primary" />
+            <CardTitle className="text-2xl font-semibold text-foreground">
               Analyzed Candidates
             </CardTitle>
           </div>
-          <CardDescription className="pt-1 text-gray-500">
+          <CardDescription className="pt-1 text-muted-foreground">
             Candidates evaluated for this role will appear below.
           </CardDescription>
         </CardHeader>
@@ -241,7 +241,7 @@ export default function JobDetailPage() {
             <CandidateList jobId={jobId} jobTitle={job.title} refreshTrigger={refreshTrigger} />
           ) : (
             // This case should ideally not be hit if job is loaded, but as a fallback:
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               <Info className="h-8 w-8 mx-auto mb-2" />
               <p>Candidate information will be displayed here.</p>
             </div>

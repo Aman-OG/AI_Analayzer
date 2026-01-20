@@ -77,10 +77,10 @@ export default function SignupPage() {
 
       <div className="max-w-md w-full glass p-8 shadow-2xl rounded-2xl relative z-10 animate-in fade-in zoom-in duration-500">
         <CardHeader className="text-center mb-6">
-          <CardTitle className="text-4xl font-bold text-indigo-600 dark:text-teal-300">
+          <CardTitle className="text-4xl font-bold text-primary">
             Join the Hiring Hub
           </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">
+          <CardDescription className="text-muted-foreground">
             Manage job posts and candidate resumes in one place.
           </CardDescription>
         </CardHeader>
@@ -91,7 +91,7 @@ export default function SignupPage() {
             <div>
               <Label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-foreground"
               >
                 Email
               </Label>
@@ -100,9 +100,9 @@ export default function SignupPage() {
                 type="email"
                 placeholder="you@company.com"
                 autoFocus
-                className={`mt-1 h-12 px-4 bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 border rounded-lg shadow-sm ${errors.email
-                    ? 'border-red-500 focus-visible:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus-visible:ring-indigo-500 dark:focus-visible:ring-teal-400'
+                className={`mt-1 h-12 px-4 bg-background placeholder:text-muted-foreground border rounded-lg shadow-sm ${errors.email
+                  ? 'border-destructive focus-visible:ring-destructive'
+                  : 'border-border focus-visible:ring-primary'
                   }`}
                 {...register('email')}
               />
@@ -129,7 +129,7 @@ export default function SignupPage() {
             <div>
               <Label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-foreground"
               >
                 Password
               </Label>
@@ -138,16 +138,16 @@ export default function SignupPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
-                  className={`mt-1 h-12 px-4 pr-10 w-full bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 border rounded-lg shadow-sm ${errors.password
-                      ? 'border-red-500 focus-visible:ring-red-500'
-                      : 'border-gray-300 dark:border-gray-600 focus-visible:ring-indigo-500 dark:focus-visible:ring-teal-400'
+                  className={`mt-1 h-12 px-4 pr-10 w-full bg-background placeholder:text-muted-foreground border rounded-lg shadow-sm ${errors.password
+                    ? 'border-destructive focus-visible:ring-destructive'
+                    : 'border-border focus-visible:ring-primary'
                     }`}
                   {...register('password')}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
+                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
                 >
                   {showPassword ? (
                     <svg
@@ -214,7 +214,7 @@ export default function SignupPage() {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full h-12 font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white flex items-center justify-center transition"
+              className="w-full h-12 font-bold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -229,11 +229,11 @@ export default function SignupPage() {
           </form>
 
           {/* Footer Link */}
-          <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link
               to="/login"
-              className="text-indigo-600 dark:text-teal-300 font-medium underline hover:text-indigo-500 dark:hover:text-teal-200"
+              className="text-primary font-medium underline hover:text-primary/80"
             >
               Log In
             </Link>
