@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
@@ -12,6 +12,73 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
 import { ErrorProvider } from './contexts/ErrorContext';
 import { useAuth } from './contexts/AuthContext';
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Layout />,
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        index: true,
+        element: (
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'login',
+        element: <LoginPage />,
+      },
+      {
+        path: 'signup',
+        element: <SignupPage />,
+      },
+      {
+        path: 'jobs',
+        children: [
+          {
+            index: true,
+            element: (
+              <ProtectedRoute>
+                <JobsListPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'new',
+            element: (
+              <ProtectedRoute>
+                <CreateJobPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: ':jobId',
+            element: (
+              <ProtectedRoute>
+                <JobDetailPage />
+              </ProtectedRoute>
+            ),
+          },
+        ],
+      },
+      {
+        path: 'dashboard',
+        element: (
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '*',
+        element: <RouteErrorBoundary />,
+      },
+    ],
+  },
+]);
 
 function App() {
   const { isLoading } = useAuth();
@@ -31,58 +98,7 @@ function App() {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <ErrorBoundary>
         <ErrorProvider>
-          <Router>
-            <Layout>
-              <div className="animate-in fade-in duration-500">
-                <Routes>
-                  {/* Public Routes */}
-                  <Route
-                    path="/login"
-                    element={<LoginPage />}
-                    errorElement={<RouteErrorBoundary />}
-                  />
-                  <Route
-                    path="/signup"
-                    element={<SignupPage />}
-                    errorElement={<RouteErrorBoundary />}
-                  />
-
-                  {/* Protected Routes */}
-                  <Route
-                    path="/"
-                    element={<ProtectedRoute><HomePage /></ProtectedRoute>}
-                    errorElement={<RouteErrorBoundary />}
-                  />
-                  <Route
-                    path="/jobs"
-                    element={<ProtectedRoute><JobsListPage /></ProtectedRoute>}
-                    errorElement={<RouteErrorBoundary />}
-                  />
-                  <Route
-                    path="/jobs/new"
-                    element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>}
-                    errorElement={<RouteErrorBoundary />}
-                  />
-                  <Route
-                    path="/jobs/:jobId"
-                    element={<ProtectedRoute><JobDetailPage /></ProtectedRoute>}
-                    errorElement={<RouteErrorBoundary />}
-                  />
-
-                  {/* 404 - Not Found */}
-                  <Route
-                    path="*"
-                    element={<RouteErrorBoundary />}
-                  />
-                  <Route
-                    path="/dashboard"
-                    element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
-                    errorElement={<RouteErrorBoundary />}
-                  />
-                </Routes>
-              </div>
-            </Layout>
-          </Router>
+          <RouterProvider router={router} />
         </ErrorProvider>
       </ErrorBoundary>
     </ThemeProvider>

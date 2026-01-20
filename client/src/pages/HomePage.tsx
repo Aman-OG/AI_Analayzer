@@ -36,36 +36,41 @@ export default function HomePage() {
   return (
     <div className="container mx-auto py-16 px-4 space-y-20">
       {/* Hero Section */}
-      <section className="relative overflow-hidden text-center bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50 dark:from-indigo-950/20 dark:via-background dark:to-purple-950/20 p-12 rounded-2xl shadow-xl border border-border/50 backdrop-blur-sm transition-all duration-700 hover:shadow-2xl hover:shadow-indigo-500/10">
-        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 text-gray-900 leading-tight px-2">
+      <section className="relative overflow-hidden text-center glass p-12 md:p-16 rounded-3xl shadow-2xl border border-border/50 backdrop-blur-xl transition-all duration-700 hover:shadow-indigo-500/10 group">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 blur-[120px] rounded-full group-hover:bg-indigo-500/20 transition-colors" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 blur-[120px] rounded-full group-hover:bg-purple-500/20 transition-colors" />
+
+        <h1 className="text-4xl md:text-7xl font-black mb-6 text-foreground tracking-tight leading-none relative z-10">
           Welcome,{' '}
-          <span className="text-indigo-600 dark:text-teal-300">
-            {user?.email || 'Guest'}
+          <span className="text-primary drop-shadow-[0_0_15px_rgba(79,70,229,0.3)]">
+            {user?.email?.split('@')[0] || 'Guest'}
           </span>
           !
         </h1>
-        <p className="text-lg md:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto px-4 leading-relaxed">
-          Your ultimate platform to simplify hiring, from crafting perfect job
-          descriptions to AI-powered candidate matching.
+        <p className="text-lg md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto px-4 leading-relaxed relative z-10 font-medium">
+          The ultimate AI-first platform to simplify recruitment, from crafting job descriptions to automated candidate ranking.
         </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <Link to="/jobs">
-            <Button
-              size="lg"
-              className="px-10 py-4 text-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors duration-300"
-            >
-              View My Jobs
-            </Button>
-          </Link>
-          <Link to="/jobs">
-            <Button
-              size="lg"
-              variant="outline"
-              className="px-10 py-4 text-lg border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors duration-300"
-            >
-              Create New Job
-            </Button>
-          </Link>
+        <div className="flex flex-col sm:flex-row justify-center gap-6 relative z-10">
+          <Button
+            asChild
+            size="lg"
+            className="px-10 py-7 text-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl hover:shadow-primary/30 transition-all hover:scale-105 active:scale-95 rounded-2xl font-bold"
+          >
+            <Link to="/jobs">
+              <Briefcase className="mr-2 h-6 w-6" />
+              Manage Jobs
+            </Link>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="px-10 py-7 text-lg border-border/50 hover:bg-muted/50 backdrop-blur-sm transition-all hover:scale-105 active:scale-95 rounded-2xl font-bold"
+          >
+            <Link to="/jobs">
+              Analyze Resumes
+            </Link>
+          </Button>
         </div>
       </section>
 
@@ -99,18 +104,18 @@ export default function HomePage() {
       </section>
 
       {/* Secondary CTA */}
-      <section className="relative text-center py-16 bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50 rounded-2xl shadow-inner backdrop-blur-sm transition-opacity duration-1000 ease-in opacity-90 hover:opacity-100">
-        <h3 className="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-400">
-          Ready to Get Started?
+      <section className="relative text-center py-20 glass rounded-3xl shadow-2xl border border-border/40 overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-purple-500/5 opacity-50" />
+        <h3 className="text-4xl font-black mb-4 text-foreground relative z-10">
+          Ready to Modernize Your Hiring?
         </h3>
-        <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto">
-          Dive in and explore all the powerful features designed to streamline
-          your recruitment.
+        <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto relative z-10 font-medium">
+          Join hundreds of recruiters saving hours every week with automated analysis.
         </p>
-        <Link to="/jobs">
+        <Link to="/jobs" className="relative z-10">
           <Button
             size="lg"
-            className="px-10 py-4 text-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors duration-300"
+            className="px-12 py-8 text-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xl hover:shadow-primary/40 transition-all hover:scale-110 active:scale-95 rounded-2xl font-black"
           >
             Go to Dashboard
           </Button>

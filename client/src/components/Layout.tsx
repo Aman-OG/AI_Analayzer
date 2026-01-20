@@ -1,7 +1,7 @@
 // export default Layout;
 import { useState } from 'react';
-import type { ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+
+import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext'; // Assuming this path is correct
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +14,7 @@ import {
   DropdownMenuGroup, // Added for grouping items
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"; // For mobile menu
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle, SheetDescription } from "@/components/ui/sheet"; // For mobile menu
 import {
   LogOut,
   Briefcase,
@@ -36,13 +36,17 @@ const useAuth = () => ({
 });
 */
 
-const Layout = ({ children }: { children: ReactNode }) => {
+const Layout = () => {
   const { user, signOut, isLoading } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error (continuing to login):', error);
+    }
     navigate('/login');
   };
 
@@ -59,12 +63,12 @@ const Layout = ({ children }: { children: ReactNode }) => {
 
   const commonNavLinks = (isMobile: boolean = false) => (
     <>
-      <Link to="/jobs" className={isMobile ? "block py-2 px-3 rounded-md hover:bg-slate-100" : ""}>
-        <Button variant={isMobile ? "link" : "ghost"} className={isMobile ? "w-full justify-start text-base text-slate-700" : "text-slate-600 hover:text-slate-900"}>
+      <Button asChild variant={isMobile ? "link" : "ghost"} className={isMobile ? "w-full justify-start text-base text-slate-700" : "text-slate-600 hover:text-slate-900"}>
+        <Link to="/jobs" className={isMobile ? "block py-2 px-3 rounded-md hover:bg-slate-100" : ""}>
           <Briefcase className="mr-2 h-4 w-4" />
           Jobs
-        </Button>
-      </Link>
+        </Link>
+      </Button>
       {/* Add other common navigation links here if any */}
       {/* Example:
       <Link to="/dashboard" className={isMobile ? "block py-2 px-3 rounded-md hover:bg-slate-100" : ""}>
@@ -148,12 +152,12 @@ const Layout = ({ children }: { children: ReactNode }) => {
               </>
             ) : (
               <>
-                <Link to="/login">
-                  <Button variant="ghost" className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-4">Login</Button>
-                </Link>
-                <Link to="/signup">
-                  <Button className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 shadow-sm hover:shadow-md transition-all">Sign Up</Button>
-                </Link>
+                <Button asChild variant="ghost" className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-4">
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 shadow-sm hover:shadow-md transition-all">
+                  <Link to="/signup">Sign Up</Link>
+                </Button>
               </>
             )}
           </nav>
@@ -170,10 +174,15 @@ const Layout = ({ children }: { children: ReactNode }) => {
               <SheetContent side="right" className="w-[300px] sm:w-[340px] p-0 bg-white">
                 <div className="flex flex-col h-full">
                   <div className="flex items-center justify-between p-6 border-b border-slate-200">
-                    <Link to="/" className="flex items-center gap-2 text-xl font-semibold text-slate-800" onClick={() => setIsMobileMenuOpen(false)}>
-                      <FileText className="h-6 w-6 text-indigo-600" />
-                      <span>Resume Analyzer</span>
-                    </Link>
+                    <div className="flex flex-col gap-1">
+                      <SheetTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
+                        <FileText className="h-6 w-6 text-indigo-600" />
+                        <span>Resume Analyzer</span>
+                      </SheetTitle>
+                      <SheetDescription className="text-xs text-slate-500">
+                        AI-powered recruitment platform
+                      </SheetDescription>
+                    </div>
                     <SheetClose asChild>
                       <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-slate-100">
                         <XIcon className="h-5 w-5" />
@@ -220,16 +229,16 @@ const Layout = ({ children }: { children: ReactNode }) => {
                       </>
                     ) : (
                       <>
-                        <Link to="/login" className="block" onClick={() => setIsMobileMenuOpen(false)}>
-                          <Button variant="outline" className="w-full text-base border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700">
+                        <Button asChild variant="outline" className="w-full text-base border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700">
+                          <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
                             <LogIn className="mr-2 h-4 w-4" /> Login
-                          </Button>
-                        </Link>
-                        <Link to="/signup" className="block" onClick={() => setIsMobileMenuOpen(false)}>
-                          <Button className="w-full text-base bg-indigo-600 hover:bg-indigo-700 text-white">
+                          </Link>
+                        </Button>
+                        <Button asChild className="w-full text-base bg-indigo-600 hover:bg-indigo-700 text-white mt-2">
+                          <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
                             <UserPlus className="mr-2 h-4 w-4" /> Sign Up
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                       </>
                     )}
                   </nav>
@@ -242,7 +251,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
 
       {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {children}
+        <Outlet />
       </main>
 
       {/* Footer */}
