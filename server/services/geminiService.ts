@@ -129,6 +129,12 @@ export const analyzeWithGemini = async (
             return parsedResponse as IGeminiAnalysis;
 
         } catch (error: any) {
+            // DETECT QUOTA EXCEEDED (429)
+            if (error.message?.includes('429') || error.status === 429) {
+                logger.error(`Gemini Quota Exceeded for attempt ${attempt + 1}. Stopping retries.`);
+                throw new Error('Gemini AI Quota Exceeded. Please try again later.');
+            }
+
             logger.error(`Gemini API call attempt ${attempt + 1} failed`, {
                 attempt: attempt + 1,
                 error: error.message
