@@ -47,4 +47,11 @@ router.get(
     exportCandidatesCsv
 );
 
+// Route to check resume processing status
+router.get(
+    '/:resumeId/status',
+    protect,
+    getResumeStatus
+);
+
 export default router;
