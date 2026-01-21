@@ -3,7 +3,8 @@ import { useState } from 'react';
 
 import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext'; // Assuming this path is correct
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,12 +64,16 @@ const Layout = () => {
 
   const commonNavLinks = (isMobile: boolean = false) => (
     <>
-      <Button asChild variant={isMobile ? "link" : "ghost"} className={isMobile ? "w-full justify-start text-base text-slate-700" : "text-slate-600 hover:text-slate-900"}>
-        <Link to="/jobs" className={isMobile ? "block py-2 px-3 rounded-md hover:bg-slate-100" : ""}>
-          <Briefcase className="mr-2 h-4 w-4" />
-          Jobs
-        </Link>
-      </Button>
+      <Link
+        to="/jobs"
+        className={cn(
+          buttonVariants({ variant: isMobile ? "link" : "ghost" }),
+          isMobile ? "w-full justify-start text-base text-slate-700 block py-2 px-3 rounded-md hover:bg-slate-100" : "text-slate-600 hover:text-slate-900"
+        )}
+      >
+        <Briefcase className="mr-2 h-4 w-4" />
+        Jobs
+      </Link>
       {/* Add other common navigation links here if any */}
       {/* Example:
       <Link to="/dashboard" className={isMobile ? "block py-2 px-3 rounded-md hover:bg-slate-100" : ""}>
@@ -152,12 +157,18 @@ const Layout = () => {
               </>
             ) : (
               <>
-                <Button asChild variant="ghost" className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-4">
-                  <Link to="/login">Login</Link>
-                </Button>
-                <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 shadow-sm hover:shadow-md transition-all">
-                  <Link to="/signup">Sign Up</Link>
-                </Button>
+                <Link
+                  to="/login"
+                  className={cn(buttonVariants({ variant: "ghost" }), "text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-4")}
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className={cn(buttonVariants({ variant: "default" }), "bg-indigo-600 hover:bg-indigo-700 text-white px-5 shadow-sm hover:shadow-md transition-all")}
+                >
+                  Sign Up
+                </Link>
               </>
             )}
           </nav>
@@ -229,16 +240,20 @@ const Layout = () => {
                       </>
                     ) : (
                       <>
-                        <Button asChild variant="outline" className="w-full text-base border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700">
-                          <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                            <LogIn className="mr-2 h-4 w-4" /> Login
-                          </Link>
-                        </Button>
-                        <Button asChild className="w-full text-base bg-indigo-600 hover:bg-indigo-700 text-white mt-2">
-                          <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
-                            <UserPlus className="mr-2 h-4 w-4" /> Sign Up
-                          </Link>
-                        </Button>
+                        <Link
+                          to="/login"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={cn(buttonVariants({ variant: "outline" }), "w-full text-base border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700")}
+                        >
+                          <LogIn className="mr-2 h-4 w-4" /> Login
+                        </Link>
+                        <Link
+                          to="/signup"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={cn(buttonVariants({ variant: "default" }), "w-full text-base bg-indigo-600 hover:bg-indigo-700 text-white mt-2")}
+                        >
+                          <UserPlus className="mr-2 h-4 w-4" /> Sign Up
+                        </Link>
                       </>
                     )}
                   </nav>

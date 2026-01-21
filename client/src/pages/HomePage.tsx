@@ -2,7 +2,8 @@
 // src/pages/HomePage.tsx
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   Card,
   CardContent,
@@ -51,26 +52,25 @@ export default function HomePage() {
           The ultimate AI-first platform to simplify recruitment, from crafting job descriptions to automated candidate ranking.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-6 relative z-10">
-          <Button
-            asChild
-            size="lg"
-            className="px-10 py-7 text-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl hover:shadow-primary/30 transition-all hover:scale-105 active:scale-95 rounded-2xl font-bold"
+          <Link
+            to="/jobs"
+            className={cn(
+              buttonVariants({ size: "lg" }),
+              "px-10 py-7 text-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl hover:shadow-primary/30 transition-all hover:scale-105 active:scale-95 rounded-2xl font-bold"
+            )}
           >
-            <Link to="/jobs">
-              <Briefcase className="mr-2 h-6 w-6" />
-              Manage Jobs
-            </Link>
-          </Button>
-          <Button
-            asChild
-            size="lg"
-            variant="outline"
-            className="px-10 py-7 text-lg border-border/50 hover:bg-muted/50 backdrop-blur-sm transition-all hover:scale-105 active:scale-95 rounded-2xl font-bold"
+            <Briefcase className="mr-2 h-6 w-6" />
+            Manage Jobs
+          </Link>
+          <Link
+            to="/jobs"
+            className={cn(
+              buttonVariants({ size: "lg", variant: "outline" }),
+              "px-10 py-7 text-lg border-border/50 hover:bg-muted/50 backdrop-blur-sm transition-all hover:scale-105 active:scale-95 rounded-2xl font-bold"
+            )}
           >
-            <Link to="/jobs">
-              Analyze Resumes
-            </Link>
-          </Button>
+            Analyze Resumes
+          </Link>
         </div>
       </section>
 
@@ -112,13 +112,14 @@ export default function HomePage() {
         <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto relative z-10 font-medium">
           Join hundreds of recruiters saving hours every week with automated analysis.
         </p>
-        <Link to="/jobs" className="relative z-10">
-          <Button
-            size="lg"
-            className="px-12 py-8 text-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xl hover:shadow-primary/40 transition-all hover:scale-110 active:scale-95 rounded-2xl font-black"
-          >
-            Go to Dashboard
-          </Button>
+        <Link
+          to="/jobs"
+          className={cn(
+            buttonVariants({ size: "lg" }),
+            "relative z-10 px-12 py-8 text-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xl hover:shadow-primary/40 transition-all hover:scale-110 active:scale-95 rounded-2xl font-black"
+          )}
+        >
+          Go to Dashboard
         </Link>
       </section>
     </div>
