@@ -44,7 +44,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
   const [error, setError] = useState<string | null>(null);
   const { showError } = useError();
 
-  const selectedCandidates = candidates.filter(c => selectedIds.includes(c.candidateId));
+  const selectedCandidates = Array.isArray(candidates) ? candidates.filter(c => selectedIds.includes(c.candidateId)) : [];
 
   const toggleSelection = (id: string) => {
     setSelectedIds(prev =>
@@ -74,7 +74,7 @@ export default function CandidateList({ jobId, jobTitle, refreshTrigger }: Candi
     setError(null);
     try {
       const data = await resumeService.getCandidatesForJob(jobId);
-      setCandidates(data);
+      setCandidates(Array.isArray(data) ? data : []);
     } catch (err: any) {
       showError(err, { jobId });
       setError(err.message || 'Could not load candidates.');

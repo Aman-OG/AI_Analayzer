@@ -30,8 +30,8 @@ const resumeService = {
 
   // GET /api/resumes/job/:jobId/candidates - Get processed candidates for a job
   getCandidatesForJob: async (jobId: string): Promise<Candidate[]> => {
-    const response = await apiClient.get<Candidate[]>(`/resumes/job/${jobId}/candidates`);
-    return response.data;
+    const response = await apiClient.get<{ data: Candidate[] }>(`/resumes/job/${jobId}/candidates`);
+    return response.data.data;
   },
 
   // GET /api/resumes/:resumeId/status - Check resume processing status
