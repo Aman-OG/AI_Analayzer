@@ -32,7 +32,9 @@ export const uploadResume = catchAsync(async (req: any, res: Response, next: Nex
     }
 
     const userId = req.user.id;
-    const uploadedResumes = [];
+
+    const uploadedResumes: { resumeId: any; filename: string; }[] = [];
+    const errors: { filename: string; error: string }[] = [];
 
     // Process each file
     for (const file of files) {
@@ -40,6 +42,7 @@ export const uploadResume = catchAsync(async (req: any, res: Response, next: Nex
             // COMPREHENSIVE FILE VALIDATION
             const fileValidation = validateResumeFile(file);
             if (!fileValidation.isValid) {
+                errors.push({ filename: file.originalname, error: fileValidation.error });
                 logger.warn(`File validation failed for ${file.originalname}: ${fileValidation.error}`, {
                     filename: file.originalname,
                     error: fileValidation.error,
@@ -50,6 +53,7 @@ export const uploadResume = catchAsync(async (req: any, res: Response, next: Nex
 
             const maliciousCheck = checkForMaliciousContent(file.buffer);
             if (!maliciousCheck.isValid) {
+                errors.push({ filename: file.originalname, error: `Malicious content: ${maliciousCheck.error}` });
                 logger.error(`Malicious content detected in ${file.originalname} from user ${userId}`, {
                     filename: file.originalname,
                     error: maliciousCheck.error,
@@ -63,6 +67,7 @@ export const uploadResume = catchAsync(async (req: any, res: Response, next: Nex
             try {
                 extractedText = await extractTextFromBuffer(file.buffer, file.mimetype);
             } catch (extractionError: any) {
+                errors.push({ filename: file.originalname, error: 'Text extraction failed or file format unsupported.' });
                 logger.error(`Text extraction failed for ${file.originalname}`, {
                     filename: file.originalname,
                     error: extractionError.message
@@ -71,6 +76,7 @@ export const uploadResume = catchAsync(async (req: any, res: Response, next: Nex
             }
 
             if (!extractedText || extractedText.trim() === '') {
+                errors.push({ filename: file.originalname, error: 'No text content found in file.' });
                 logger.warn(`No text extracted from ${file.originalname}`);
                 continue;
             }
@@ -104,12 +110,16 @@ export const uploadResume = catchAsync(async (req: any, res: Response, next: Nex
             });
 
         } catch (err: any) {
+            errors.push({ filename: file.originalname, error: `Unexpected processing error: ${err.message}` });
             logger.error(`Unexpected error processing ${file.originalname}`, { error: err.message });
         }
     }
 
     if (uploadedResumes.length === 0) {
-        return next(new AppError('All uploaded files failed validation or processing.', 400));
+        return res.status(400).json({
+            message: 'All uploaded files failed validation or processing.',
+            errors
+        });
     }
 
     res.status(201).json({
@@ -234,9 +244,9 @@ export const getRecruiterStats = catchAsync(async (req: any, res: Response, next
     // 3. Status Distribution
     const statusDistribution = {
         uploaded: resumes.filter(r => r.processingStatus === 'uploaded').length,
-        processing: resumes.filter(r => r.processingStatus === 'processing').length,
+        processing: resumes.filter(r => r.processingStatus === 'processing' || r.processingStatus === 'extracting').length,
         completed: completedResumes.length,
-        failed: resumes.filter(r => r.processingStatus === 'failed').length,
+        failed: resumes.filter(r => r.processingStatus === 'error').length,
     };
 
     // 4. Score Distribution (0-4, 5-7, 8-10)
