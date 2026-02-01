@@ -33,8 +33,12 @@ export type GeminiAnalysis = {
     yearsExperience: number | string;
     education: Education[];
     fitScore: number;
+    technicalFit?: number;
+    experienceMatch?: number;
+    educationLevel?: number;
     justification: string;
     warnings: string[];
+    interviewQuestions?: string[];
 };
 
 export type Resume = {
@@ -42,14 +46,17 @@ export type Resume = {
     jobId: string;
     userId: string;
     originalFilename: string;
+    candidateName?: string;
     fileType: 'pdf' | 'docx';
+    fileHash?: string;
+    isReviewed?: boolean;
     supabaseFileUrl: string;
     uploadTimestamp: string;
-    processingStatus: 'uploaded' | 'processing' | 'completed' | 'error';
+    processingStatus: 'uploaded' | 'processing' | 'completed' | 'error' | 'parsing' | 'scoring' | 'finalizing';
     errorDetails?: string;
     score?: number;
     geminiAnalysis?: GeminiAnalysis;
-    analysis?: GeminiAnalysis; // Alias for Groq analysis results
+    analysis?: GeminiAnalysis;
     isTopPerformer?: boolean;
     createdAt: string;
     updatedAt: string;

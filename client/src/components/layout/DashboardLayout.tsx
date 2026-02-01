@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, User, LayoutDashboard, Briefcase, FileText } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, Briefcase, FileText, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 
@@ -60,8 +60,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                     className="h-12 pl-2 pr-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all gap-3"
                                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                                 >
-                                    <div className="h-9 w-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                                        <User className="h-5 w-5" />
+                                    <div className="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-blue-500/20">
+                                        {user.email?.[0].toUpperCase()}
                                     </div>
                                     <div className="flex flex-col items-start text-left">
                                         <span className="text-sm font-bold text-slate-900 dark:text-white leading-none">
@@ -86,6 +86,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                                 <Button variant="ghost" className="w-full justify-start h-11 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl">
                                                     <User className="mr-3 h-4 w-4" />
                                                     My Profile
+                                                </Button>
+                                            </Link>
+                                            <Link to="/profile#security">
+                                                <Button variant="ghost" className="w-full justify-start h-11 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl">
+                                                    <Shield className="mr-3 h-4 w-4" />
+                                                    Security Settings
                                                 </Button>
                                             </Link>
                                             <Button

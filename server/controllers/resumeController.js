@@ -3,6 +3,7 @@ const JobDescription = require('../models/JobDescriptionModel');
 const supabase = require('../config/supabaseClient');
 const { parseResume } = require('../utils/resumeParser');
 const { triggerGroqAnalysis } = require('../services/groqService');
+const crypto = require('crypto');
 
 /**
  * Upload and analyze resume
@@ -54,9 +55,55 @@ const uploadResume = async (req, res) => {
         // Determine file type
         const fileType = file.mimetype === 'application/pdf' ? 'pdf' : 'docx';
 
-        // Extract text from file
+        // Calculate file hash for uniqueness optimization
+        const fileHash = crypto.createHash('md5').update(file.buffer).digest('hex');
+
+        // Check if this job already has a completed analysis with the same hash
+        const existingHashResume = await Resume.findOne({
+            jobId,
+            fileHash,
+            processingStatus: 'completed'
+        });
+
+        if (existingHashResume) {
+            console.log(`✨ Hash match found! Reusing analysis for file: ${file.originalname}`);
+
+            // Still upload to supabase for visibility, but link to existing results
+            const fileName = `${userId}/${jobId}/${Date.now()}_${file.originalname}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('resumes')
+                .upload(fileName, file.buffer, { contentType: file.mimetype });
+
+            if (!uploadError) {
+                const { data: urlData } = supabase.storage.from('resumes').getPublicUrl(fileName);
+
+                const resume = await Resume.create({
+                    jobId,
+                    userId,
+                    originalFilename: file.originalname,
+                    fileType,
+                    fileHash,
+                    supabaseFileUrl: urlData.publicUrl,
+                    extractedText: existingHashResume.extractedText,
+                    processingStatus: 'completed',
+                    score: existingHashResume.score,
+                    geminiAnalysis: existingHashResume.geminiAnalysis
+                });
+
+                return res.status(201).json({
+                    success: true,
+                    message: 'Resume detected as duplicate (content). Analysis reused instantly.',
+                    resumeId: resume._id,
+                });
+            }
+        }
+
+        // Extract text from file - with granular status
         let extractedText;
         try {
+            // We create the resume entry first to show 'parsing' status if possible, 
+            // but usually we want to parse before DB if we might fail.
+            // Let's parse first.
             extractedText = await parseResume(file.buffer, fileType);
         } catch (parseError) {
             return res.status(400).json({
@@ -85,12 +132,6 @@ const uploadResume = async (req, res) => {
 
         if (uploadError) {
             console.error('❌ Supabase upload error:', uploadError);
-            if (uploadError.message === 'The resource was not found' || uploadError.error === 'Bucket not found') {
-                return res.status(500).json({
-                    success: false,
-                    message: "Storage bucket 'resumes' not found. Please create it in Supabase.",
-                });
-            }
             return res.status(500).json({
                 success: false,
                 message: `File upload failed: ${uploadError.message}`,
@@ -103,15 +144,16 @@ const uploadResume = async (req, res) => {
             .from('resumes')
             .getPublicUrl(fileName);
 
-        // Save resume to database
+        // Save resume to database with 'processing' status
         const resume = await Resume.create({
             jobId,
             userId,
             originalFilename: file.originalname,
             fileType,
+            fileHash,
             supabaseFileUrl: urlData.publicUrl,
             extractedText,
-            processingStatus: 'uploaded',
+            processingStatus: 'processing',
         });
 
         // Trigger async analysis (don't wait for it)

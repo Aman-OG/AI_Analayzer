@@ -17,6 +17,10 @@ const resumeSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        candidateName: {
+            type: String,
+            default: null,
+        },
         fileType: {
             type: String,
             enum: ['pdf', 'docx'],
@@ -30,13 +34,21 @@ const resumeSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        fileHash: {
+            type: String,
+            index: true,
+        },
+        isReviewed: {
+            type: Boolean,
+            default: false,
+        },
         uploadTimestamp: {
             type: Date,
             default: Date.now,
         },
         processingStatus: {
             type: String,
-            enum: ['uploaded', 'processing', 'completed', 'error'],
+            enum: ['uploaded', 'processing', 'completed', 'error', 'parsing', 'scoring', 'finalizing'],
             default: 'uploaded',
             index: true,
         },
@@ -56,7 +68,7 @@ const resumeSchema = new mongoose.Schema(
                 default: [],
             },
             yearsExperience: {
-                type: mongoose.Schema.Types.Mixed, // Can be Number, String like '3-5', '10+'
+                type: mongoose.Schema.Types.Mixed,
                 default: null,
             },
             education: [
@@ -72,11 +84,33 @@ const resumeSchema = new mongoose.Schema(
                 max: 10,
                 default: null,
             },
+            technicalFit: {
+                type: Number,
+                min: 1,
+                max: 10,
+                default: null,
+            },
+            experienceMatch: {
+                type: Number,
+                min: 1,
+                max: 10,
+                default: null,
+            },
+            educationLevel: {
+                type: Number,
+                min: 1,
+                max: 10,
+                default: null,
+            },
             justification: {
                 type: String,
                 default: null,
             },
             warnings: {
+                type: [String],
+                default: [],
+            },
+            interviewQuestions: {
                 type: [String],
                 default: [],
             },

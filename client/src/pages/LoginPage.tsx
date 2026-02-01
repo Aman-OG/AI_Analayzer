@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
-import { LayoutDashboard, Mail, Lock, ArrowRight, Github } from 'lucide-react';
+import { LayoutDashboard, Mail, ArrowRight, Github } from 'lucide-react';
+import { PasswordInput } from '../components/ui/PasswordInput';
 
 export function LoginPage() {
     const [email, setEmail] = useState('');
@@ -87,18 +88,13 @@ export function LoginPage() {
                                     Reset Password?
                                 </Link>
                             </div>
-                            <div className="relative group">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                                <input
-                                    id="password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
+                            <PasswordInput
+                                id="password"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
                         </div>
 
                         <Button
@@ -149,7 +145,7 @@ export function LoginPage() {
                                         fill="#FBBC05"
                                     />
                                     <path
-                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                                         fill="#EA4335"
                                     />
                                 </svg>
