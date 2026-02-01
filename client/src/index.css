@@ -4,52 +4,100 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
+    --card: 0 0% 100% / 0.7;
     --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
+    --popover: 0 0% 100% / 0.8;
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
+    --secondary: 210 40% 96.1% / 0.5;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
+    --muted: 210 40% 96.1% / 0.4;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
+    --accent: 210 40% 96.1% / 0.5;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 217 91% 60%;
-    --radius: 0.75rem;
+    --radius: 1rem;
+    --glass-background: 255 255 255 / 0.1;
+    --glass-border: 255 255 255 / 0.2;
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 84% 4.9% / 0.7;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222.2 84% 4.9% / 0.8;
     --popover-foreground: 210 40% 98%;
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217.2 32.6% 17.5% / 0.5;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 217.2 32.6% 17.5% / 0.4;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 217.2 32.6% 17.5% / 0.5;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
+    --border: 222.2 84% 12%;
     --input: 217.2 32.6% 17.5%;
     --ring: 217 91% 60%;
+    --glass-background: 0 0 0 / 0.2;
+    --glass-border: 255 255 255 / 0.1;
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
   }
 }
 
 @layer utilities {
+  .glass {
+    @apply backdrop-blur-md border;
+    background: hsl(var(--card));
+    border-color: hsla(var(--border) / 0.5);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-lg border;
+    background: hsla(var(--background) / 0.8);
+    border-color: hsla(var(--border) / 0.4);
+  }
+
+  .glass-card {
+    @apply glass rounded-2xl transition-all duration-300 hover:shadow-2xl hover:translate-y-[-2px];
+    border-color: hsla(var(--border) / 0.3);
+  }
+
+  .glass-input {
+    @apply bg-transparent backdrop-blur-sm border rounded-xl focus:ring-2 focus:ring-primary/50 transition-all;
+    border-color: hsla(var(--border) / 0.5);
+  }
+
+  .glass-button {
+    @apply backdrop-blur-sm border rounded-xl transition-all active:scale-95;
+    border-color: hsla(var(--border) / 0.5);
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 5px hsla(var(--primary) / 0.2), 0 0 10px hsla(var(--primary) / 0.2);
+    }
+
+    to {
+      box-shadow: 0 0 20px hsla(var(--primary) / 0.4), 0 0 30px hsla(var(--primary) / 0.4);
+    }
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
   }

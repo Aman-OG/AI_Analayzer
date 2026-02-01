@@ -3,13 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
-import { LayoutDashboard, User, Mail, Lock, ArrowRight, Sparkles, Github } from 'lucide-react';
+import { LayoutDashboard, User, Mail, ArrowRight, Sparkles, Github } from 'lucide-react';
+import { PasswordInput } from '../components/ui/PasswordInput';
+import { PasswordStrength } from '../components/ui/PasswordStrength';
 
 export function SignupPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isPasswordValid, setIsPasswordValid] = useState(false);
     const navigate = useNavigate();
 
     const handleOAuthLogin = async (provider: 'google' | 'github') => {
@@ -28,6 +31,12 @@ export function SignupPage() {
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!isPasswordValid) {
+            toast.error('Please fulfill all password requirements');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -102,32 +111,26 @@ export function SignupPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label htmlFor="password" className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
-                                Password
-                            </label>
-                            <div className="relative group">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                                <input
-                                    id="password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    minLength={6}
-                                />
-                            </div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider ml-1">
-                                MINIMUM 6 CHARACTERS
-                            </p>
+                        <div className="space-y-1">
+                            <PasswordInput
+                                label="Password"
+                                id="password"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+
+                            <PasswordStrength
+                                password={password}
+                                onValidationChange={setIsPasswordValid}
+                            />
                         </div>
 
                         <Button
                             type="submit"
-                            className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-xl shadow-blue-500/20 group"
-                            disabled={loading}
+                            className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-xl shadow-blue-500/20 group mt-4"
+                            disabled={loading || (!isPasswordValid && password.length > 0)}
                         >
                             {loading ? (
                                 <div className="flex items-center gap-2">
