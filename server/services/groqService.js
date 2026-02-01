@@ -1,10 +1,17 @@
-const { model } = require('../config/gemini');
+const { Groq } = require('groq-sdk');
 const Resume = require('../models/ResumeModel');
-const JobDescription = require('../models/JobDescriptionModel');
-const geminiQueue = require('../utils/GeminiQueue');
+const geminiQueue = require('../utils/GeminiQueue'); // We'll adapt the queue name later or reuse it
+
+const groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY
+});
+
+// Use Llama 3 70B for high quality analysis
+const PRIMARY_MODEL = 'llama-3.3-70b-versatile';
+const FALLBACK_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 /**
- * Construct detailed prompt for Gemini analysis
+ * Construct detailed prompt for Groq/Llama analysis
  * @param {string} jobDescriptionText - Job description
  * @param {string} resumeText - Resume text
  * @param {Array<string>} mustHaveSkills - Required skills
@@ -64,17 +71,32 @@ ${resumeText}
 };
 
 /**
- * Call Gemini API and parse response
+ * Call Groq API with fallback logic
  * @param {string} prompt - The prompt to send
+ * @param {boolean} useFallback - Whether to use the fallback model
  * @returns {Promise<Object>} Parsed analysis
  */
-const analyzeWithGemini = async (prompt) => {
-    try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let text = response.text();
+const analyzeWithGroq = async (prompt, useFallback = false) => {
+    const model = useFallback ? FALLBACK_MODEL : PRIMARY_MODEL;
+    console.log(`🤖 Analyzing with Groq Model: ${model}`);
 
-        // Strip markdown code fences if present
+    try {
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            model: model,
+            temperature: 0.1, // Low temperature for consistent JSON
+            max_completion_tokens: useFallback ? 1024 : 4096, // Adjust tokens for fallback
+            response_format: { type: "json_object" } // Force JSON mode if available
+        });
+
+        let text = chatCompletion.choices[0]?.message?.content || '';
+
+        // Strip markdown code fences if present (just in case)
         text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
 
         // Extract JSON between first { and last }
@@ -95,14 +117,22 @@ const analyzeWithGemini = async (prompt) => {
 
         return analysis;
     } catch (error) {
-        console.error('Gemini API error:', error.message);
+        console.error(`❌ Error with model ${model}:`, error.message);
+
+        // If primary model fails, try fallback
+        if (!useFallback) {
+            console.log(`⚠️ Switching to fallback model: ${FALLBACK_MODEL}`);
+            return analyzeWithGroq(prompt, true);
+        }
+
+        // If fallback also fails, throw error
         throw error;
     }
 };
 
 /**
- * Scan for PII in analysis results and redact
- * @param {Object} analysis - Gemini analysis object
+ * Scan for PII in analysis results and redact (reused logic)
+ * @param {Object} analysis - Analysis object
  * @returns {Object} Sanitized analysis with warnings
  */
 const scanForPII = (analysis) => {
@@ -120,7 +150,6 @@ const scanForPII = (analysis) => {
         });
     }
 
-    // Check for PII in education institutions (add warning, don't auto-redact)
     if (analysis.education && Array.isArray(analysis.education)) {
         analysis.education.forEach(edu => {
             if (edu.institution) {
@@ -131,7 +160,6 @@ const scanForPII = (analysis) => {
         });
     }
 
-    // Check for PII in justification (add warning, don't auto-redact to preserve readability)
     if (analysis.justification) {
         if (emailRegex.test(analysis.justification) || phoneRegex.test(analysis.justification)) {
             warnings.push('PII detected in justification field');
@@ -143,14 +171,14 @@ const scanForPII = (analysis) => {
 };
 
 /**
- * Trigger Gemini analysis for a resume (queued)
+ * Trigger Groq analysis for a resume (queued)
  * @param {string} resumeId - Resume document ID
  */
-const triggerGeminiAnalysis = async (resumeId) => {
-    // Wrap entire analysis in queue
+const triggerGroqAnalysis = async (resumeId) => {
+    // Reuse existing queue mechanism
     await geminiQueue.add(async () => {
         try {
-            console.log(`🔄 Starting analysis for resume: ${resumeId}`);
+            console.log(`🔄 Starting analysis for resume (Groq): ${resumeId}`);
 
             // Update status to processing
             const resume = await Resume.findById(resumeId).populate('jobId');
@@ -175,14 +203,14 @@ const triggerGeminiAnalysis = async (resumeId) => {
                 job.focusAreas
             );
 
-            // Call Gemini API
-            const analysis = await analyzeWithGemini(prompt);
+            // Call Groq API
+            const analysis = await analyzeWithGroq(prompt);
 
             // Scan for PII
             const sanitizedAnalysis = scanForPII(analysis);
 
             // Update resume with results
-            resume.geminiAnalysis = {
+            resume.geminiAnalysis = { // Keeping field name for compatibility
                 skills: sanitizedAnalysis.skills || [],
                 yearsExperience: sanitizedAnalysis.yearsExperience || null,
                 education: sanitizedAnalysis.education || [],
@@ -204,14 +232,7 @@ const triggerGeminiAnalysis = async (resumeId) => {
             const resume = await Resume.findById(resumeId);
             if (resume) {
                 resume.processingStatus = 'error';
-
-                // Check if it's a daily quota error
-                if (error.message.includes('Daily API Quota Exceeded')) {
-                    resume.errorDetails = 'Daily API Quota Exceeded. Please try again tomorrow.';
-                } else {
-                    resume.errorDetails = error.message;
-                }
-
+                resume.errorDetails = error.message;
                 await resume.save();
             }
 
@@ -222,8 +243,5 @@ const triggerGeminiAnalysis = async (resumeId) => {
 };
 
 module.exports = {
-    constructPrompt,
-    analyzeWithGemini,
-    scanForPII,
-    triggerGeminiAnalysis,
+    triggerGroqAnalysis
 };

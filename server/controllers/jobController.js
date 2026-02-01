@@ -1,127 +1,203 @@
 const JobDescription = require('../models/JobDescriptionModel');
-const AppError = require('../utils/appError');
-const catchAsync = require('../utils/catchAsync');
 
 /**
- * @desc    Create a new job description
- * @route   POST /api/jobs
- * @access  Private
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware
+ * Get all jobs for the logged-in user
+ * GET /api/jobs
  */
-const createJob = catchAsync(async (req, res, next) => {
-  const { title, descriptionText, mustHaveSkills, focusAreas } = req.body;
-  const userId = req.user.id; // From authMiddleware
+const getAllJobs = async (req, res) => {
+    try {
+        const userId = req.user.id;
 
-  if (!title || !descriptionText) {
-    return next(new AppError('Title and description text are required.', 400));
-  }
+        const jobs = await JobDescription.aggregate([
+            { $match: { userId } },
+            { $sort: { createdAt: -1 } },
+            {
+                $lookup: {
+                    from: 'resumes',
+                    localField: '_id',
+                    foreignField: 'jobId',
+                    as: 'resumes'
+                }
+            },
+            {
+                $addFields: {
+                    candidateCount: { $size: '$resumes' }
+                }
+            },
+            {
+                $project: {
+                    resumes: 0,
+                    __v: 0
+                }
+            }
+        ]);
 
-  const newJob = new JobDescription({
-    userId,
-    title,
-    descriptionText,
-    mustHaveSkills: mustHaveSkills || [],
-    focusAreas: focusAreas || [],
-  });
+        res.status(200).json({
+            success: true,
+            count: jobs.length,
+            jobs,
+        });
 
-  const savedJob = await newJob.save();
-  res.status(201).json(savedJob);
-});
+    } catch (error) {
+        console.error('Get jobs error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching jobs',
+        });
+    }
+};
 
 /**
- * @desc    Get all jobs for the authenticated user
- * @route   GET /api/jobs
- * @access  Private
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware
+ * Get a single job by ID
+ * GET /api/jobs/:id
  */
-const getJobs = catchAsync(async (req, res, next) => {
-  const jobs = await JobDescription.find({ userId: req.user.id }).sort({ createdAt: -1 });
-  res.status(200).json(jobs);
-});
+const getJobById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
 
-// @access  Private (ensure user owns this job)
-const getJobById = catchAsync(async (req, res, next) => {
-  const job = await JobDescription.findById(req.params.id);
+        const job = await JobDescription.findOne({ _id: id, userId });
 
-  if (!job) {
-    return next(new AppError('Job not found.', 404));
-  }
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found',
+            });
+        }
 
-  // Ensure the logged-in user owns this job description
-  if (job.userId.toString() !== req.user.id) {
-    return next(new AppError('User not authorized to access this job.', 403));
-  }
+        res.status(200).json({
+            success: true,
+            job,
+        });
 
-  res.status(200).json(job);
-});
+    } catch (error) {
+        console.error('Get job error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching job',
+        });
+    }
+};
 
-// @desc    Update a job description
-// @route   PUT /api/jobs/:id
-// @access  Private
 /**
- * @desc    Update a job description
- * @route   PUT /api/jobs/:id
- * @access  Private
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware
+ * Create a new job
+ * POST /api/jobs
  */
-const updateJob = catchAsync(async (req, res, next) => {
-  const { title, descriptionText, mustHaveSkills, focusAreas } = req.body;
-  let job = await JobDescription.findById(req.params.id);
+const createJob = async (req, res) => {
+    try {
+        const { title, company, descriptionText, mustHaveSkills, focusAreas } = req.body;
+        const userId = req.user.id;
 
-  if (!job) {
-    return next(new AppError('Job not found.', 404));
-  }
+        if (!title || !descriptionText) {
+            return res.status(400).json({
+                success: false,
+                message: 'Title and description are required',
+            });
+        }
 
-  if (job.userId.toString() !== req.user.id) {
-    return next(new AppError('User not authorized to update this job.', 403));
-  }
+        const job = await JobDescription.create({
+            title,
+            company,
+            descriptionText,
+            mustHaveSkills: mustHaveSkills || [],
+            focusAreas: focusAreas || [],
+            userId,
+        });
 
-  job.title = title || job.title;
-  job.descriptionText = descriptionText || job.descriptionText;
-  job.mustHaveSkills = mustHaveSkills !== undefined ? mustHaveSkills : job.mustHaveSkills;
-  job.focusAreas = focusAreas !== undefined ? focusAreas : job.focusAreas;
+        res.status(201).json({
+            success: true,
+            message: 'Job created successfully',
+            job,
+        });
 
-  const updatedJob = await job.save();
-  res.status(200).json(updatedJob);
-});
+    } catch (error) {
+        console.error('Create job error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creating job',
+        });
+    }
+};
 
-// @desc    Delete a job description
-// @route   DELETE /api/jobs/:id
-// @access  Private
 /**
- * @desc    Delete a job description
- * @route   DELETE /api/jobs/:id
- * @access  Private
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware
+ * Update a job
+ * PUT /api/jobs/:id
  */
-const deleteJob = catchAsync(async (req, res, next) => {
-  const job = await JobDescription.findById(req.params.id);
+const updateJob = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+        const { title, company, descriptionText, mustHaveSkills, focusAreas } = req.body;
 
-  if (!job) {
-    return next(new AppError('Job not found.', 404));
-  }
+        const job = await JobDescription.findOne({ _id: id, userId });
 
-  if (job.userId.toString() !== req.user.id) {
-    return next(new AppError('User not authorized to delete this job.', 403));
-  }
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found',
+            });
+        }
 
-  await job.deleteOne();
+        // Update fields
+        if (title) job.title = title;
+        if (company !== undefined) job.company = company;
+        if (descriptionText) job.descriptionText = descriptionText;
+        if (mustHaveSkills !== undefined) job.mustHaveSkills = mustHaveSkills;
+        if (focusAreas !== undefined) job.focusAreas = focusAreas;
 
-  res.status(200).json({ message: 'Job description deleted successfully.' });
-});
+        await job.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Job updated successfully',
+            job,
+        });
+
+    } catch (error) {
+        console.error('Update job error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating job',
+        });
+    }
+};
+
+/**
+ * Delete a job
+ * DELETE /api/jobs/:id
+ */
+const deleteJob = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const job = await JobDescription.findOneAndDelete({ _id: id, userId });
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Job deleted successfully',
+        });
+
+    } catch (error) {
+        console.error('Delete job error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting job',
+        });
+    }
+};
 
 module.exports = {
-  createJob,
-  getJobs,
-  getJobById,
-  updateJob,
-  deleteJob,
+    getAllJobs,
+    getJobById,
+    createJob,
+    updateJob,
+    deleteJob,
 };

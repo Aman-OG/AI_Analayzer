@@ -1,22 +1,46 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { jobService } from '../services';
 import { toast } from 'sonner';
-import { ArrowLeft, X, Rocket, Sparkles, Plus } from 'lucide-react';
+import { ArrowLeft, X, Save, Sparkles, Plus } from 'lucide-react';
 
-export function CreateJobPage() {
+export function EditJobPage() {
+    const { id } = useParams<{ id: string }>();
     const [title, setTitle] = useState('');
-    const [company, setCompany] = useState(''); // Added company field
+    const [company, setCompany] = useState('');
     const [descriptionText, setDescriptionText] = useState('');
     const [mustHaveSkills, setMustHaveSkills] = useState<string[]>([]);
     const [focusAreas, setFocusAreas] = useState<string[]>([]);
     const [skillInput, setSkillInput] = useState('');
     const [focusInput, setFocusInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(true);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (id) {
+            fetchJob();
+        }
+    }, [id]);
+
+    const fetchJob = async () => {
+        try {
+            const job = await jobService.getJobById(id!);
+            setTitle(job.title);
+            setCompany(job.company || '');
+            setDescriptionText(job.descriptionText);
+            setMustHaveSkills(job.mustHaveSkills || []);
+            setFocusAreas(job.focusAreas || []);
+        } catch (error: any) {
+            toast.error('Failed to load job details');
+            navigate('/jobs');
+        } finally {
+            setFetching(false);
+        }
+    };
 
     const addSkill = () => {
         if (skillInput.trim() && !mustHaveSkills.includes(skillInput.trim())) {
@@ -45,22 +69,31 @@ export function CreateJobPage() {
         setLoading(true);
 
         try {
-            const job = await jobService.createJob({
+            await jobService.updateJob(id!, {
                 title,
-                company: company || 'My Company', // Fallback if needed
+                company: company || 'My Company',
                 descriptionText,
                 mustHaveSkills,
                 focusAreas,
             });
 
-            toast.success('Job created successfully!');
-            navigate(`/jobs/${job._id}`);
+            toast.success('Job updated successfully!');
+            navigate(`/jobs/${id}`);
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to create job');
+            toast.error(error.response?.data?.message || 'Failed to update job');
         } finally {
             setLoading(false);
         }
     };
+
+    if (fetching) {
+        return (
+            <div className="max-w-4xl mx-auto space-y-8 animate-pulse">
+                <div className="h-10 w-48 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+                <div className="h-[600px] bg-slate-100 dark:bg-slate-900/50 rounded-3xl" />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
@@ -69,14 +102,14 @@ export function CreateJobPage() {
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => navigate('/jobs')}
+                    onClick={() => navigate(`/jobs/${id}`)}
                     className="rounded-full hover:bg-white dark:hover:bg-slate-900 shadow-sm"
                 >
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white leading-none mb-1">New Position</h1>
-                    <p className="text-slate-500 text-sm">Define requirements for AI-powered screening</p>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white leading-none mb-1">Edit Position</h1>
+                    <p className="text-slate-500 text-sm">Update job requirements and screening criteria</p>
                 </div>
             </div>
 
@@ -197,12 +230,12 @@ export function CreateJobPage() {
                             {loading ? (
                                 <div className="flex items-center gap-2">
                                     <Sparkles className="h-5 w-5 animate-spin" />
-                                    <span>Processing...</span>
+                                    <span>Updating...</span>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-2">
-                                    <Rocket className="h-5 w-5" />
-                                    <span>Publish & Analyze</span>
+                                    <Save className="h-5 w-5" />
+                                    <span>Save Changes</span>
                                 </div>
                             )}
                         </Button>
@@ -210,9 +243,9 @@ export function CreateJobPage() {
                             type="button"
                             variant="ghost"
                             className="w-full text-slate-500 font-medium"
-                            onClick={() => navigate('/jobs')}
+                            onClick={() => navigate(`/jobs/${id}`)}
                         >
-                            Save as Draft
+                            Discard Changes
                         </Button>
                     </div>
                 </div>

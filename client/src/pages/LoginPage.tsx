@@ -1,259 +1,180 @@
-// src/pages/LoginPage.tsx
-import { useNavigate, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { LoginSchema, type LoginFormData } from '@/lib/validators';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '../components/ui/button';
+import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { LayoutDashboard, Mail, Lock, ArrowRight, Github } from 'lucide-react';
 
-// Spinner component
-const Spinner = () => (
-  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-);
+export function LoginPage() {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-export default function LoginPage() {
-  const navigate = useNavigate();
-  const { session } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+    const handleOAuthLogin = async (provider: 'google' | 'github') => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo: `${window.location.origin}/jobs`,
+                },
+            });
+            if (error) throw error;
+        } catch (error: any) {
+            toast.error(error.message || `${provider} login failed`);
+        }
+    };
 
-  // Redirect to home if already logged in
-  useEffect(() => {
-    if (session) {
-      navigate('/');
-    }
-  }, [session, navigate]);
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(LoginSchema),
-    defaultValues: { email: '', password: '' },
-  });
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-  const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-      if (error) throw error;
+            if (error) throw error;
 
-      const {
-        data: { session: newSession },
-      } = await supabase.auth.getSession();
-      if (!newSession) throw new Error('No session returned');
+            toast.success('Welcome back!');
+            navigate('/jobs');
+        } catch (error: any) {
+            toast.error(error.message || 'Login failed');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      toast.success('Welcome back!', {
-        description: 'You are now logged in.',
-      });
-      navigate('/');
-    } catch (err: any) {
-      toast.error('Login Failed', {
-        description: err.message || 'Invalid credentials.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 font-sans selection:bg-blue-100 selection:text-blue-700">
+            <div className="w-full max-w-[440px] space-y-8 animate-fade-in">
+                {/* Branding */}
+                <div className="text-center space-y-2">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-500/20 mb-4 animate-bounce-slow">
+                        <LayoutDashboard className="h-6 w-6" />
+                    </div>
+                    <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Login to ResumeAI</h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">Streamline your hiring process today.</p>
+                </div>
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-500 p-6 relative overflow-hidden">
-      {/* Background Decorative Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full" />
+                <div className="p-8 rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none">
+                    <form onSubmit={handleLogin} className="space-y-5">
+                        <div className="space-y-2">
+                            <label htmlFor="email" className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
+                                Email Address
+                            </label>
+                            <div className="relative group">
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                                <input
+                                    id="email"
+                                    type="email"
+                                    placeholder="name@company.com"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
 
-      <div className="max-w-md w-full glass p-8 shadow-2xl rounded-2xl relative z-10 animate-in fade-in zoom-in duration-500">
-        <CardHeader className="text-center mb-6">
-          <CardTitle className="text-4xl font-bold text-primary">
-            Welcome Back
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Sign in to manage your job posts and candidates.
-          </CardDescription>
-        </CardHeader>
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center ml-1">
+                                <label htmlFor="password" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                    Password
+                                </label>
+                                <Link to="/forgot-password" title="Reset your password" className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                                    Reset Password?
+                                </Link>
+                            </div>
+                            <div className="relative group">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                                <input
+                                    id="password"
+                                    type="password"
+                                    placeholder="••••••••"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Email */}
-            <div>
-              <Label
-                htmlFor="email"
-                className="block text-sm font-medium text-foreground"
-              >
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                autoFocus
-                className={`mt-1 h-12 px-4 bg-background placeholder:text-muted-foreground border rounded-lg shadow-sm ${errors.email
-                  ? 'border-destructive focus-visible:ring-destructive'
-                  : 'border-border focus-visible:ring-primary'
-                  }`}
-                {...register('email')}
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {errors.email.message}
+                        <Button
+                            type="submit"
+                            className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-xl shadow-blue-500/20 group"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span>Verifying...</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center gap-2">
+                                    <span>Sign In</span>
+                                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                                </div>
+                            )}
+                        </Button>
+
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-slate-100 dark:border-slate-800" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase tracking-widest font-black text-slate-400">
+                                <span className="bg-white dark:bg-slate-900 px-4">OR CONTINUE WITH</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3">
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={() => handleOAuthLogin('google')}
+                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-slate-50 transition-colors"
+                            >
+                                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                                    <path
+                                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                        fill="#4285F4"
+                                    />
+                                    <path
+                                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                        fill="#34A853"
+                                    />
+                                    <path
+                                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.27.81-.57z"
+                                        fill="#FBBC05"
+                                    />
+                                    <path
+                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                        fill="#EA4335"
+                                    />
+                                </svg>
+                                Google Account
+                            </Button>
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={() => handleOAuthLogin('github')}
+                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-slate-50 transition-colors"
+                            >
+                                <Github className="mr-2 h-4 w-4" />
+                                GitHub Account
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+
+                <p className="text-center text-slate-500 font-medium">
+                    Don't have an account?{' '}
+                    <Link to="/signup" className="text-blue-600 font-black hover:underline underline-offset-4">
+                        Create one for free
+                    </Link>
                 </p>
-              )}
             </div>
-
-            {/* Password with toggle */}
-            <div>
-              <Label
-                htmlFor="password"
-                className="block text-sm font-medium text-foreground"
-              >
-                Password
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  className={`mt-1 h-12 px-4 pr-10 w-full bg-background placeholder:text-muted-foreground border rounded-lg shadow-sm ${errors.password
-                    ? 'border-destructive focus-visible:ring-destructive'
-                    : 'border-border focus-visible:ring-primary'
-                    }`}
-                  {...register('password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-                >
-                  {showPassword ? (
-                    /* Eye open icon */
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                  ) : (
-                    /* Eye closed icon */
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.055 10.055 0 013.158-4.415m3.3-2.01A9.973 9.973 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.978 9.978 0 01-1.249 2.527M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3 3l18 18"
-                      />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-
-            {/* Forgot password */}
-            <div className="text-right text-sm">
-              <Link
-                to="/forgot-password"
-                className="text-primary hover:text-primary/80 font-medium underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            {/* Sign In button */}
-            <Button
-              type="submit"
-              className="w-full h-12 font-bold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Spinner />
-                  <span className="ml-2">Signing in...</span>
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </Button>
-          </form>
-
-          {/* Sign up link */}
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link
-              to="/signup"
-              className="text-primary hover:text-primary/80 font-medium underline"
-            >
-              Sign up
-            </Link>
-          </div>
-        </CardContent>
-      </div>
-    </div>
-  );
+        </div>
+    );
 }

@@ -1,41 +1,41 @@
-// server/models/JobDescriptionModel.js
 const mongoose = require('mongoose');
 
 const jobDescriptionSchema = new mongoose.Schema(
-  {
-    userId: { // The user who created/owns this job description
-      type: String, // Supabase user ID (UUID)
-      required: true,
+    {
+        title: {
+            type: String,
+            required: [true, 'Job title is required'],
+            trim: true,
+        },
+        company: {
+            type: String,
+            trim: true,
+        },
+        descriptionText: {
+            type: String,
+            required: [true, 'Job description is required'],
+        },
+        mustHaveSkills: {
+            type: [String],
+            default: [],
+        },
+        focusAreas: {
+            type: [String],
+            default: [],
+        },
+        userId: {
+            type: String,
+            required: [true, 'User ID is required'],
+            index: true,
+        },
     },
-    title: {
-      type: String,
-      required: [true, 'Job title is required.'],
-      trim: true,
-    },
-    descriptionText: {
-      type: String,
-      required: [true, 'Job description text is required.'],
-    },
-    // Fields for Day 5: Prompt Customization
-    mustHaveSkills: {
-        type: [String],
-        default: [],
-    },
-    focusAreas: {
-        type: [String],
-        default: [],
-    },
-    // customPromptInstructions: { // More advanced: allow full custom instructions
-    //     type: String,
-    // }
-  },
-  {
-    timestamps: true, // Adds createdAt and updatedAt
-  }
+    {
+        timestamps: true,
+    }
 );
 
-// Optional: Index for faster querying by userId
-jobDescriptionSchema.index({ userId: 1 });
+// Index for efficient user queries
+jobDescriptionSchema.index({ userId: 1, createdAt: -1 });
 
 const JobDescription = mongoose.model('JobDescription', jobDescriptionSchema);
 

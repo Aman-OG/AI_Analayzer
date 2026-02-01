@@ -1,0 +1,44 @@
+[
+    {
+        "id": "1",
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com",
+        "score": 9.2,
+        "skills": [
+            "React",
+            "TypeScript",
+            "Node.js",
+            "AWS"
+        ],
+        "summary": "Highly experienced full-stack engineer with a strong background in distributed systems and cloud architecture.",
+        "status": "Shortlisted"
+    },
+    {
+        "id": "2",
+        "name": "John Smith",
+        "email": "john.smith@example.com",
+        "score": 8.5,
+        "skills": [
+            "Python",
+            "Django",
+            "PostgreSQL",
+            "React"
+        ],
+        "summary": "Backend specialist with excellent problem-solving skills and experience in scaling web applications.",
+        "status": "In Review"
+    },
+    {
+        "id": "3",
+        "name": "Alice Johnson",
+        "email": "alice.johnson@example.com",
+        "score": 7.8,
+        "skills": [
+            "Java",
+            "Spring Boot",
+            "Docker",
+            "Kubernetes"
+        ],
+        "summary": "Robust experience in enterprise-level Java applications and container orchestration.",
+        "status": "In Review"
+    }
+]
