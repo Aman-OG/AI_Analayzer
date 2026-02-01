@@ -1,57 +1,62 @@
-// src/types/index.ts
-// ... (keep JobDescription, CreateJobData) ...
+export type User = {
+    id: string;
+    email: string;
+    full_name?: string;
+};
+
+export type Session = {
+    access_token: string;
+    refresh_token: string;
+    user: User;
+};
 
 export type JobDescription = {
-  _id: string;
-  title: string;
-  descriptionText: string;
-  mustHaveSkills?: string[];
-  focusAreas?: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+    _id: string;
+    title: string;
+    company?: string;
+    descriptionText: string;
+    mustHaveSkills: string[];
+    focusAreas: string[];
+    userId: string;
+    createdAt: string;
+    updatedAt: string;
+};
 
-export type GeminiEducation = {
-  degree?: string | null;
-  institution?: string | null;
-  graduationYear?: string | null;
-}
+export type Education = {
+    degree: string;
+    institution: string;
+    graduationYear: string;
+};
 
-export type CandidateGeminiAnalysis = {
-  skills?: string[];
-  yearsExperience?: string | number | null;
-  education?: GeminiEducation[];
-  justification?: string;
-  warnings?: string[];
-}
+export type GeminiAnalysis = {
+    skills: string[];
+    yearsExperience: number | string;
+    education: Education[];
+    fitScore: number;
+    justification: string;
+    warnings: string[];
+};
 
-export type Candidate = {
-  candidateId: string;
-  originalFilename: string;
-  fileType: string;
-  uploadTimestamp: string;
-  score: number;
-  skills?: string[];
-  yearsExperience?: string | number | null;
-  education?: GeminiEducation[];
-  justification?: string;
-  warnings?: string[];
-  isFlagged: boolean;
-}
+export type Resume = {
+    _id: string;
+    jobId: string;
+    userId: string;
+    originalFilename: string;
+    fileType: 'pdf' | 'docx';
+    supabaseFileUrl: string;
+    uploadTimestamp: string;
+    processingStatus: 'uploaded' | 'processing' | 'completed' | 'error';
+    errorDetails?: string;
+    score?: number;
+    geminiAnalysis?: GeminiAnalysis;
+    analysis?: GeminiAnalysis; // Alias for Groq analysis results
+    isTopPerformer?: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
 
-export type ResumeUploadResponse = {
-  message: string;
-  resumeId: string;
-  data?: Array<{
-    resumeId: string;
-    filename: string;
-  }>;
-}
-
-// Define the type first
-export type CreateJobData = {
-  title: string;
-  descriptionText: string;
-  mustHaveSkills?: string[]; // Array for API
-  focusAreas?: string[];     // Array for API
-}
+export type ApiResponse<T> = {
+    success: boolean;
+    message?: string;
+    data?: T;
+};

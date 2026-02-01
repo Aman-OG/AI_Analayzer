@@ -1,106 +1,101 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
-import { ThemeProvider } from 'next-themes';
-import Layout from './components/Layout';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import JobsListPage from './pages/JobsListPage';
-import JobDetailPage from './pages/JobDetailPage';
-import CreateJobPage from './pages/CreateJobPage';
-import DashboardPage from './pages/DashboardPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import { ErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
-import { ErrorProvider } from './contexts/ErrorContext';
-import { useAuth } from './contexts/AuthContext';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { ThemeProvider } from './components/ThemeProvider';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { DashboardLayout } from './components/layout/DashboardLayout';
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { SignupPage } from './pages/SignupPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { JobsListPage } from './pages/JobsListPage';
+import { CreateJobPage } from './pages/CreateJobPage';
+import { JobDetailsPage } from './pages/JobDetailsPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { EditJobPage } from './pages/EditJobPage';
 
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Layout />,
-    errorElement: <RouteErrorBoundary />,
-    children: [
-      {
-        index: true,
-        element: (
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'login',
-        element: <LoginPage />,
-      },
-      {
-        path: 'signup',
-        element: <SignupPage />,
-      },
-      {
-        path: 'jobs',
-        children: [
-          {
-            index: true,
-            element: (
-              <ProtectedRoute>
-                <JobsListPage />
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: 'new',
-            element: (
-              <ProtectedRoute>
-                <CreateJobPage />
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: ':jobId',
-            element: (
-              <ProtectedRoute>
-                <JobDetailPage />
-              </ProtectedRoute>
-            ),
-          },
-        ],
-      },
-      {
-        path: 'dashboard',
-        element: (
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '*',
-        element: <RouteErrorBoundary />,
-      },
-    ],
-  },
-]);
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
 
-function App() {
-  const { isLoading } = useAuth();
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading application...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
+  return user ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
+function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <ErrorBoundary>
-        <ErrorProvider>
-          <RouterProvider router={router} />
-        </ErrorProvider>
-      </ErrorBoundary>
+    <ThemeProvider defaultTheme="system">
+      <AuthProvider>
+        <BrowserRouter>
+          <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+            <Routes>
+              {/* Public Routes without Layout or with specific landing layout */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+              {/* Protected Routes wrapped in DashboardLayout */}
+              <Route
+                path="/jobs"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <JobsListPage />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/create"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <CreateJobPage />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <EditJobPage />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:id"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <JobDetailsPage />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <ProfilePage />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+            <Toaster position="top-right" richColors />
+          </div>
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

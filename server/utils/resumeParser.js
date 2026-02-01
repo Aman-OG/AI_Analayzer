@@ -1,25 +1,52 @@
-// server/utils/resumeParser.js
-const pdf = require('pdf-parse');
+const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 
-const extractTextFromBuffer = async (fileBuffer, mimeType) => {
-  try {
-    if (mimeType === 'application/pdf') {
-      const data = await pdf(fileBuffer);
-      return data.text;
-    } else if (
-      mimeType === 'application/msword' || // .doc
-      mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' // .docx
-    ) {
-      const { value } = await mammoth.extractRawText({ buffer: fileBuffer });
-      return value;
-    } else {
-      throw new Error('Unsupported file type for text extraction.');
+/**
+ * Extract text from PDF buffer
+ * @param {Buffer} buffer - PDF file buffer
+ * @returns {Promise<string>} Extracted text
+ */
+const parsePDF = async (buffer) => {
+    try {
+        const data = await pdfParse(buffer);
+        return data.text;
+    } catch (error) {
+        throw new Error(`PDF parsing failed: ${error.message}`);
     }
-  } catch (error) {
-    console.error('Error extracting text:', error);
-    throw error; // Re-throw the error to be caught by the controller
-  }
 };
 
-module.exports = { extractTextFromBuffer };
+/**
+ * Extract text from DOCX buffer
+ * @param {Buffer} buffer - DOCX file buffer
+ * @returns {Promise<string>} Extracted text
+ */
+const parseDOCX = async (buffer) => {
+    try {
+        const result = await mammoth.extractRawText({ buffer });
+        return result.value;
+    } catch (error) {
+        throw new Error(`DOCX parsing failed: ${error.message}`);
+    }
+};
+
+/**
+ * Parse resume file based on type
+ * @param {Buffer} buffer - File buffer
+ * @param {string} fileType - 'pdf' or 'docx'
+ * @returns {Promise<string>} Extracted text
+ */
+const parseResume = async (buffer, fileType) => {
+    if (fileType === 'pdf') {
+        return await parsePDF(buffer);
+    } else if (fileType === 'docx') {
+        return await parseDOCX(buffer);
+    } else {
+        throw new Error(`Unsupported file type: ${fileType}`);
+    }
+};
+
+module.exports = {
+    parsePDF,
+    parseDOCX,
+    parseResume,
+};

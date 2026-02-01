@@ -1,26 +1,31 @@
-// server/routes/jobRoutes.js
 const express = require('express');
 const {
-  createJob,
-  getJobs,
-  getJobById,
-  updateJob,
-  deleteJob,
+    getAllJobs,
+    getJobById,
+    createJob,
+    updateJob,
+    deleteJob,
 } = require('../controllers/jobController');
-const { protect } = require('../middleware/authMiddleware');
-const { jobLimiter } = require('../middleware/rateLimitMiddleware');
-const validate = require('../middleware/validationMiddleware');
-const { jobSchemas } = require('../schemas');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.route('/')
-  .post(protect, jobLimiter, validate(jobSchemas.create), createJob) // Rate limit and validate 
-  .get(protect, getJobs);
+// All routes require authentication
+router.use(authMiddleware);
 
-router.route('/:id')
-  .get(protect, getJobById)
-  .put(protect, validate(jobSchemas.update), updateJob)
-  .delete(protect, deleteJob);
+// GET /api/jobs - Get all jobs
+router.get('/', getAllJobs);
+
+// POST /api/jobs - Create new job
+router.post('/', createJob);
+
+// GET /api/jobs/:id - Get single job
+router.get('/:id', getJobById);
+
+// PUT /api/jobs/:id - Update job
+router.put('/:id', updateJob);
+
+// DELETE /api/jobs/:id - Delete job
+router.delete('/:id', deleteJob);
 
 module.exports = router;

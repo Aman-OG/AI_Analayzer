@@ -1,209 +1,234 @@
 const Resume = require('../models/ResumeModel');
 const JobDescription = require('../models/JobDescriptionModel');
-const { extractTextFromBuffer } = require('../utils/resumeParser');
-const { triggerGeminiAnalysis } = require('../services/geminiService');
-const { validateResumeFile, checkForMaliciousContent } = require('../utils/fileValidator');
-const AppError = require('../utils/appError');
-const catchAsync = require('../utils/catchAsync');
-const logger = require('../utils/logger');
+const supabase = require('../config/supabaseClient');
+const { parseResume } = require('../utils/resumeParser');
+const { triggerGroqAnalysis } = require('../services/groqService');
 
 /**
- * @desc    Upload a resume, extract text, and save metadata
- * @route   POST /api/resumes/upload
- * @access  Private (requires authentication)
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware
+ * Upload and analyze resume
+ * POST /api/resumes/upload
  */
-const uploadResume = catchAsync(async (req, res, next) => {
-  if (!req.file) {
-    return next(new AppError('No file uploaded.', 400));
-  }
+const uploadResume = async (req, res) => {
+    try {
+        const { jobId } = req.body;
+        const userId = req.user.id;
+        const file = req.file;
 
-  const { jobId } = req.body;
-  const fileBuffer = req.file.buffer;
-  const originalFilename = req.file.originalname;
-  const mimeType = req.file.mimetype;
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded',
+            });
+        }
 
-  if (!jobId) {
-    return next(new AppError('Job ID is required.', 400));
-  }
+        if (!jobId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Job ID is required',
+            });
+        }
 
-  // Validate if jobId exists and belongs to the user
-  const jobExists = await JobDescription.findOne({ _id: jobId, userId: req.user.id });
-  if (!jobExists) {
-    return next(new AppError('Job description not found or you are not authorized for this job.', 404));
-  }
+        // Verify job exists and belongs to user
+        const job = await JobDescription.findOne({ _id: jobId, userId });
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found',
+            });
+        }
 
-  // COMPREHENSIVE FILE VALIDATION
-  const fileValidation = validateResumeFile(req.file);
-  if (!fileValidation.isValid) {
-    logger.warn(`File validation failed for ${req.file.originalname}: ${fileValidation.error}`, {
-      filename: req.file.originalname,
-      error: fileValidation.error,
-      userId: req.user.id
-    });
-    return next(new AppError(fileValidation.error, 400));
-  }
+        // Check for duplicate resume (same filename for the same job and user)
+        const duplicate = await Resume.findOne({
+            jobId,
+            userId,
+            originalFilename: file.originalname
+        });
 
-  const maliciousCheck = checkForMaliciousContent(req.file.buffer);
-  if (!maliciousCheck.isValid) {
-    logger.error(`Malicious content detected in ${req.file.originalname} from user ${req.user.id}`, {
-      filename: req.file.originalname,
-      error: maliciousCheck.error,
-      userId: req.user.id
-    });
-    return next(new AppError(maliciousCheck.error, 400));
-  }
+        if (duplicate) {
+            return res.status(400).json({
+                success: false,
+                message: `The resume '${file.originalname}' has already been uploaded for this position.`,
+            });
+        }
 
-  const userId = req.user.id;
+        // Determine file type
+        const fileType = file.mimetype === 'application/pdf' ? 'pdf' : 'docx';
 
-  // Extract text from validated file
-  let extractedText;
-  try {
-    extractedText = await extractTextFromBuffer(fileBuffer, mimeType);
-  } catch (extractionError) {
-    logger.error(`Text extraction failed for ${originalFilename}`, {
-      filename: originalFilename,
-      error: extractionError.message,
-      stack: extractionError.stack
-    });
-    return next(new AppError(`Failed to extract text from file: ${extractionError.message}`, 500));
-  }
+        // Extract text from file
+        let extractedText;
+        try {
+            extractedText = await parseResume(file.buffer, fileType);
+        } catch (parseError) {
+            return res.status(400).json({
+                success: false,
+                message: `File parsing failed: ${parseError.message}`,
+            });
+        }
 
-  if (!extractedText || extractedText.trim() === '') {
-    return next(new AppError('Could not extract any text from the resume or the resume is empty.', 400));
-  }
+        if (!extractedText || extractedText.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No text could be extracted from the file',
+            });
+        }
 
-  const newResume = new Resume({
-    userId,
-    jobId,
-    originalFilename,
-    fileType: mimeType,
-    extractedText,
-    processingStatus: 'uploaded',
-  });
+        // Upload file to Supabase Storage
+        const fileName = `${userId}/${jobId}/${Date.now()}_${file.originalname}`;
+        console.log(`📤 Uploading to Supabase: ${fileName}`);
 
-  await newResume.save();
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('resumes')
+            .upload(fileName, file.buffer, {
+                contentType: file.mimetype,
+                upsert: false,
+            });
 
-  // Trigger Gemini Analysis Asynchronously
-  triggerGeminiAnalysis(newResume._id)
-    .then(() => {
-      logger.info(`Gemini analysis for ${newResume._id} initiated successfully.`, { resumeId: newResume._id });
-    })
-    .catch(err => {
-      logger.error(`Failed to initiate Gemini analysis for ${newResume._id}`, {
-        resumeId: newResume._id,
-        error: err.message,
-        stack: err.stack
-      });
-    });
+        if (uploadError) {
+            console.error('❌ Supabase upload error:', uploadError);
+            if (uploadError.message === 'The resource was not found' || uploadError.error === 'Bucket not found') {
+                return res.status(500).json({
+                    success: false,
+                    message: "Storage bucket 'resumes' not found. Please create it in Supabase.",
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                message: `File upload failed: ${uploadError.message}`,
+            });
+        }
+        console.log('✅ Supabase upload success:', uploadData.path);
 
-  res.status(201).json({
-    message: 'Resume uploaded and text extracted. Analysis has been queued.',
-    resumeId: newResume._id,
-  });
-});
+        // Get public URL
+        const { data: urlData } = supabase.storage
+            .from('resumes')
+            .getPublicUrl(fileName);
 
-/**
- * @desc    Get all candidates for a specific job with pagination
- * @route   GET /api/resumes/job/:jobId/candidates
- * @access  Private
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware
- */
-const getCandidatesForJob = catchAsync(async (req, res, next) => {
-  const { jobId } = req.params;
-  const userId = req.user.id;
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 10;
-  const skip = (page - 1) * limit;
+        // Save resume to database
+        const resume = await Resume.create({
+            jobId,
+            userId,
+            originalFilename: file.originalname,
+            fileType,
+            supabaseFileUrl: urlData.publicUrl,
+            extractedText,
+            processingStatus: 'uploaded',
+        });
 
-  // 1. Validate Job Ownership
-  const job = await JobDescription.findById(jobId);
-  if (!job) {
-    return next(new AppError('Job not found.', 404));
-  }
-  if (job.userId.toString() !== userId) {
-    return next(new AppError('You are not authorized to view candidates for this job.', 403));
-  }
+        // Trigger async analysis (don't wait for it)
+        triggerGroqAnalysis(resume._id.toString()).catch(err => {
+            console.error('Background analysis trigger error:', err);
+        });
 
-  // 2. Fetch Processed Resumes for this Job with pagination
-  const resumes = await Resume.find({
-    jobId: jobId,
-    processingStatus: 'completed',
-  })
-    .sort({ score: -1 })
-    .skip(skip)
-    .limit(limit);
+        res.status(201).json({
+            success: true,
+            message: 'Resume uploaded successfully. Analysis in progress.',
+            resumeId: resume._id,
+        });
 
-  const total = await Resume.countDocuments({
-    jobId: jobId,
-    processingStatus: 'completed',
-  });
-
-  // Map to a more friendly "Candidate" structure for the frontend
-  const candidates = resumes.map(doc => ({
-    candidateId: doc._id,
-    originalFilename: doc.originalFilename,
-    fileType: doc.fileType,
-    uploadTimestamp: doc.createdAt,
-    score: doc.score,
-    skills: doc.geminiAnalysis?.skills || [],
-    yearsExperience: doc.geminiAnalysis?.yearsExperience || null,
-    education: doc.geminiAnalysis?.education || [],
-    justification: doc.geminiAnalysis?.justification || '',
-    warnings: doc.geminiAnalysis?.warnings || [],
-    isFlagged: (doc.geminiAnalysis?.warnings?.length || 0) > 0
-  }));
-
-  res.status(200).json({
-    status: 'success',
-    results: candidates.length,
-    total,
-    page,
-    pages: Math.ceil(total / limit),
-    data: candidates
-  });
-});
-
-/**
- * @desc    Get the status of a specific resume analysis
- * @route   GET /api/resumes/:resumeId/status
- * @access  Private
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware
- */
-const getResumeStatus = catchAsync(async (req, res, next) => {
-  const { resumeId } = req.params;
-  const userId = req.user.id;
-
-  const resume = await Resume.findById(resumeId);
-  if (!resume) {
-    return next(new AppError('Resume not found.', 404));
-  }
-
-  if (resume.userId.toString() !== userId) {
-    return next(new AppError('You are not authorized to view this resume.', 403));
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      resumeId: resume._id,
-      processingStatus: resume.processingStatus,
-      errorDetails: resume.errorDetails,
-      score: resume.score,
-      originalFilename: resume.originalFilename,
-      updatedAt: resume.updatedAt
+    } catch (error) {
+        console.error('Upload resume error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error uploading resume',
+        });
     }
-  });
-});
+};
+
+/**
+ * Get all candidates for a job
+ * GET /api/resumes/candidates/:jobId
+ */
+const getCandidates = async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        const userId = req.user.id;
+
+        // Verify job exists and belongs to user
+        const job = await JobDescription.findOne({ _id: jobId, userId });
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found',
+            });
+        }
+
+        // Get ALL resumes for this job (not just completed)
+        const resumes = await Resume.find({ jobId })
+            .select('-extractedText -__v') // Exclude large text field
+            .sort({ score: -1, uploadTimestamp: -1 });
+
+        // Calculate top 20% from completed resumes only
+        const completedResumes = resumes.filter(r => r.processingStatus === 'completed');
+        const top20PercentCount = Math.ceil(completedResumes.length * 0.2);
+        const topScores = completedResumes
+            .map(r => r.score)
+            .sort((a, b) => b - a)
+            .slice(0, top20PercentCount);
+        const minTopScore = topScores.length > 0 ? topScores[topScores.length - 1] : null;
+
+        // Add isTopPerformer flag
+        const candidatesWithFlags = resumes.map(resume => {
+            const resumeObj = resume.toObject();
+            resumeObj.isTopPerformer =
+                resume.processingStatus === 'completed' &&
+                minTopScore !== null &&
+                resume.score >= minTopScore;
+            return resumeObj;
+        });
+
+        res.status(200).json({
+            success: true,
+            count: candidatesWithFlags.length,
+            candidates: candidatesWithFlags,
+        });
+
+    } catch (error) {
+        console.error('Get candidates error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching candidates',
+        });
+    }
+};
+
+/**
+ * Delete a candidate
+ * DELETE /api/resumes/:id
+ */
+const deleteCandidate = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const resume = await Resume.findOneAndDelete({ _id: id, userId });
+
+        if (!resume) {
+            return res.status(404).json({
+                success: false,
+                message: 'Candidate not found',
+            });
+        }
+
+        // Optional: Delete from Supabase Storage as well if needed
+        // const filePath = resume.supabaseFileUrl.split('/resumes/')[1];
+        // await supabase.storage.from('resumes').remove([filePath]);
+
+        res.status(200).json({
+            success: true,
+            message: 'Candidate deleted successfully',
+        });
+
+    } catch (error) {
+        console.error('Delete candidate error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting candidate',
+        });
+    }
+};
 
 module.exports = {
-  uploadResume,
-  getCandidatesForJob,
-  getResumeStatus,
+    uploadResume,
+    getCandidates,
+    deleteCandidate,
 };

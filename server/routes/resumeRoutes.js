@@ -1,46 +1,20 @@
-// server/routes/resumeRoutes.js
 const express = require('express');
-const {
-    uploadResume,
-    getCandidatesForJob,
-    getResumeStatus
-} = require('../controllers/resumeController');
-const { protect } = require('../middleware/authMiddleware');
-const upload = require('../middleware/uploadMiddleware'); // Multer instance
-const { handleMulterError } = require('../middleware/uploadMiddleware');
-const { uploadLimiter, aiLimiter } = require('../middleware/rateLimitMiddleware');
-const validate = require('../middleware/validationMiddleware');
-const { resumeSchemas } = require('../schemas');
+const { uploadResume, getCandidates, deleteCandidate } = require('../controllers/resumeController');
+const authMiddleware = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
 const router = express.Router();
 
-// Single file upload, field name in form-data should be 'resumeFile'
-// Apply rate limiting to prevent abuse of AI analysis and storage
-router.post(
-    '/upload',
-    uploadLimiter, // Rate limit uploads
-    aiLimiter, // Rate limit AI specifically
-    protect, // Ensure user is authenticated
-    upload.single('resumeFile'), // Multer middleware for single file
-    validate(resumeSchemas.upload), // Validate jobId in body
-    handleMulterError, // Handle multer-specific errors
-    uploadResume
-);
+// All routes require authentication
+router.use(authMiddleware);
 
+// POST /api/resumes/upload - Upload and analyze resume
+router.post('/upload', upload.single('resume'), uploadResume);
 
-// New route to get candidates for a specific job
-router.get(
-    '/job/:jobId/candidates',
-    protect,
-    getCandidatesForJob
-);
+// GET /api/resumes/candidates/:jobId - Get all candidates for a job
+router.get('/candidates/:jobId', getCandidates);
 
-// Route to check status of a specific resume
-router.get(
-    '/:resumeId/status',
-    protect,
-    getResumeStatus
-);
+// DELETE /api/resumes/:id - Delete a candidate's resume
+router.delete('/:id', deleteCandidate);
 
 module.exports = router;
-
