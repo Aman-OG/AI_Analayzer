@@ -10,7 +10,9 @@ import {
     Sparkles,
     ArrowLeft,
     Upload,
-    Edit3
+    Edit3,
+    FileText,
+    X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,7 +22,7 @@ export function JobDetailsPage() {
     const [job, setJob] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     useEffect(() => {
@@ -55,43 +57,69 @@ export function JobDetailsPage() {
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file) {
-            validateAndSetFile(file);
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            validateAndAddFiles(files);
         }
     };
 
-    const validateAndSetFile = (file: File) => {
+    const validateAndAddFiles = (files: File[]) => {
         const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-        if (!validTypes.includes(file.type)) {
-            toast.error('Please upload a PDF or DOCX file');
-            return;
-        }
-        setSelectedFile(file);
+        const validFiles = files.filter(file => {
+            if (!validTypes.includes(file.type)) {
+                toast.error(`${file.name} is not a PDF or DOCX file`);
+                return false;
+            }
+            return true;
+        });
+
+        setSelectedFiles(prev => [...prev, ...validFiles]);
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            validateAndSetFile(file);
+        const files = e.target.files ? Array.from(e.target.files) : [];
+        if (files.length > 0) {
+            validateAndAddFiles(files);
         }
     };
 
+    const removeFile = (index: number) => {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleUpload = async () => {
-        if (!selectedFile || !id) return;
+        if (selectedFiles.length === 0 || !id) return;
 
         setUploading(true);
+        let successCount = 0;
+        let failCount = 0;
+
         try {
-            await resumeService.uploadResume(id, selectedFile);
-            toast.success('Resume uploaded! AI analysis is running in the background.');
-            setSelectedFile(null);
-            setRefreshTrigger(prev => prev + 1);
+            await Promise.all(selectedFiles.map(async (file) => {
+                try {
+                    await resumeService.uploadResume(id, file);
+                    successCount++;
+                } catch (err) {
+                    failCount++;
+                    console.error(`Failed to upload ${file.name}:`, err);
+                }
+            }));
+
+            if (successCount > 0) {
+                toast.success(`${successCount} resume(s) uploaded! AI analysis is running.`);
+                setSelectedFiles([]);
+                setRefreshTrigger(prev => prev + 1);
+            }
+
+            if (failCount > 0) {
+                toast.error(`Failed to upload ${failCount} file(s).`);
+            }
 
             // Reset file input
             const fileInput = document.getElementById('resume-upload') as HTMLInputElement;
             if (fileInput) fileInput.value = '';
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to upload resume');
+            toast.error('An error occurred during bulk upload');
         } finally {
             setUploading(false);
         }
@@ -146,7 +174,7 @@ export function JobDetailsPage() {
             <div className="grid lg:grid-cols-3 gap-8">
                 {/* Left Column: Job Info */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="p-8 rounded-3xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                    <div className="p-8 glass-card space-y-6">
                         <section className="space-y-3">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Description</h3>
                             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">
@@ -159,7 +187,7 @@ export function JobDetailsPage() {
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Strict Requirements</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {job.mustHaveSkills.map((skill: string, idx: number) => (
-                                        <span key={idx} className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 text-xs font-semibold">
+                                        <span key={idx} className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest">
                                             {skill}
                                         </span>
                                     ))}
@@ -190,37 +218,68 @@ export function JobDetailsPage() {
                                         <div className={`p-3 rounded-2xl bg-white/10 mb-3 transition-transform ${isDragging ? 'scale-110' : ''}`}>
                                             <Upload className={`w-8 h-8 ${isDragging ? 'text-white' : 'text-blue-100'}`} />
                                         </div>
-                                        {selectedFile ? (
+                                        {selectedFiles.length > 0 ? (
                                             <div className="space-y-1">
-                                                <p className="text-sm font-bold text-white truncate max-w-[200px]">{selectedFile.name}</p>
+                                                <p className="text-sm font-bold text-white">
+                                                    {selectedFiles.length} file(s) ready
+                                                </p>
                                                 <p className="text-[10px] text-blue-200 uppercase font-black tracking-widest">Selected</p>
                                             </div>
                                         ) : (
                                             <div className="space-y-1">
                                                 <p className="text-sm font-bold text-blue-50">
-                                                    {isDragging ? 'Drop it here!' : 'Click or Drop Resume'}
+                                                    {isDragging ? 'Drop them here!' : 'Click or Drop Resumes'}
                                                 </p>
                                                 <p className="text-[10px] text-blue-200 uppercase font-black tracking-widest">PDF or DOCX</p>
                                             </div>
                                         )}
                                     </div>
-                                    <input id="resume-upload" type="file" className="hidden" accept=".pdf,.docx" onChange={handleFileChange} />
+                                    <input
+                                        id="resume-upload"
+                                        type="file"
+                                        className="hidden"
+                                        accept=".pdf,.docx"
+                                        multiple
+                                        onChange={handleFileChange}
+                                    />
                                 </label>
+
+                                {/* Selected Files List */}
+                                {selectedFiles.length > 0 && (
+                                    <div className="space-y-2 max-h-40 overflow-y-auto px-1">
+                                        {selectedFiles.map((file, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10 group/file animate-fade-in">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <div className="p-1.5 rounded-lg bg-white/10 text-white shrink-0">
+                                                        <FileText className="h-3.5 w-3.5" />
+                                                    </div>
+                                                    <span className="text-[11px] font-medium text-blue-50 truncate">{file.name}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => removeFile(idx)}
+                                                    className="p-1 hover:bg-white/10 rounded-md text-white/50 hover:text-white transition-colors"
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 
                                 <Button
                                     className="w-full h-14 rounded-2xl bg-white text-blue-600 hover:bg-blue-50 font-black text-base shadow-lg transition-transform hover:-translate-y-1"
                                     onClick={handleUpload}
-                                    disabled={!selectedFile || uploading}
+                                    disabled={selectedFiles.length === 0 || uploading}
                                 >
                                     {uploading ? (
                                         <div className="flex items-center gap-2">
                                             <div className="h-4 w-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
-                                            <span>Analyzing...</span>
+                                            <span>Analyzing {selectedFiles.length} files...</span>
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-2">
                                             <Sparkles className="h-5 w-5" />
-                                            <span>Rank Candidate</span>
+                                            <span>Rank Candidates ({selectedFiles.length})</span>
                                         </div>
                                     )}
                                 </Button>

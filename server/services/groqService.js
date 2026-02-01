@@ -32,17 +32,21 @@ Your goal is to extract specific information, evaluate the candidate's fit, and 
 
 **IMPORTANT INSTRUCTIONS:**
 1. RESPOND ONLY IN VALID JSON FORMAT. Do not include any text outside the JSON structure.
-2. EXPLICITLY EXCLUDE ALL PERSONALLY IDENTIFIABLE INFORMATION (PII). This includes: name, email, phone, address, social media, photos. Use placeholders like "[REDACTED FOR PII]" if needed.
-3. The 'fitScore' should be an integer between 1 (very poor fit) and 10 (excellent fit).
-4. 'yearsExperience' should be estimated years of relevant experience (number, range like '3-5', or '10+').
-5. 'skills' should list skills relevant to the job description found in the resume.
-6. 'education' should list qualifications with anonymized institutions.
-7. 'justification' should explain the fitScore, highlighting strengths/weaknesses.
-8. Differentiate between keyword stuffing vs genuine experience depth.
-9. Include 'warnings' array for missing critical skills or ambiguities.
+2. EXPLICITLY EXCLUDE ALL OTHER PERSONALLY IDENTIFIABLE INFORMATION (PII) EXCEPT THE NAME. This includes: email, phone, address, social media, photos. Use placeholders like "[REDACTED FOR PII]" for these other fields.
+3. EXTRACT THE CANDIDATE'S FULL NAME from the resume. If not found, use null.
+4. VALIDATE THE DOCUMENT: Determine if this document is actually a resume, CV, or professional profile. If it is school material, a textbook chapter, student notes, or anything else that is not a job application document, set "isResume" to false.
+5. The 'fitScore' should be an integer between 1 (very poor fit) and 10 (excellent fit).
+6. 'yearsExperience' should be estimated years of relevant experience (number, range like '3-5', or '10+').
+7. 'skills' should list skills relevant to the job description found in the resume.
+8. 'education' should list qualifications with anonymized institutions.
+9. 'justification' should explain the fitScore, highlighting strengths/weaknesses.
+10. Differentiate between keyword stuffing vs genuine experience depth.
+11. Include 'warnings' array for missing critical skills or ambiguities.
 
 **JSON OUTPUT STRUCTURE:**
 {
+  "isResume": "boolean",
+  "candidateName": "string or null",
   "skills": ["string"],
   "yearsExperience": "number or string",
   "education": [
@@ -53,8 +57,12 @@ Your goal is to extract specific information, evaluate the candidate's fit, and 
     }
   ],
   "fitScore": "number (1-10)",
+  "technicalFit": "number (1-10)",
+  "experienceMatch": "number (1-10)",
+  "educationLevel": "number (1-10)",
   "justification": "string",
-  "warnings": ["string"]
+  "warnings": ["string"],
+  "interviewQuestions": ["string"]
 }
 
 **JOB DESCRIPTION:**
@@ -203,21 +211,43 @@ const triggerGroqAnalysis = async (resumeId) => {
                 job.focusAreas
             );
 
+            // Update status to scoring
+            resume.processingStatus = 'scoring';
+            await resume.save();
+
             // Call Groq API
             const analysis = await analyzeWithGroq(prompt);
+
+            // Update status to finalizing
+            resume.processingStatus = 'finalizing';
+            await resume.save();
 
             // Scan for PII
             const sanitizedAnalysis = scanForPII(analysis);
 
+            // Check Document Validation
+            if (sanitizedAnalysis.isResume === false) {
+                resume.processingStatus = 'error';
+                resume.errorDetails = 'Rejected: This document does not appear to be a resume (AI Validation Failed).';
+                await resume.save();
+                console.log(`❌ Analysis rejected (Not a resume): ${resumeId}`);
+                return;
+            }
+
             // Update resume with results
-            resume.geminiAnalysis = { // Keeping field name for compatibility
+            resume.geminiAnalysis = {
                 skills: sanitizedAnalysis.skills || [],
                 yearsExperience: sanitizedAnalysis.yearsExperience || null,
                 education: sanitizedAnalysis.education || [],
                 fitScore: sanitizedAnalysis.fitScore,
+                technicalFit: sanitizedAnalysis.technicalFit || null,
+                experienceMatch: sanitizedAnalysis.experienceMatch || null,
+                educationLevel: sanitizedAnalysis.educationLevel || null,
                 justification: sanitizedAnalysis.justification,
                 warnings: sanitizedAnalysis.warnings || [],
+                interviewQuestions: sanitizedAnalysis.interviewQuestions || [],
             };
+            resume.candidateName = sanitizedAnalysis.candidateName || null;
             resume.score = sanitizedAnalysis.fitScore;
             resume.processingStatus = 'completed';
             resume.errorDetails = null;

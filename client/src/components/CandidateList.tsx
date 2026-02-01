@@ -19,6 +19,8 @@ import {
     Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AnalysisStepper } from './AnalysisStepper';
+import { CompareCandidatesModal } from './CompareCandidatesModal';
 
 interface CandidateListProps {
     jobId: string;
@@ -30,6 +32,8 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [isPolling, setIsPolling] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [showCompareModal, setShowCompareModal] = useState(false);
 
     useEffect(() => {
         loadCandidates();
@@ -38,14 +42,14 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
     // Auto-refresh polling
     useEffect(() => {
         const hasProcessing = candidates.some(
-            (c) => c.processingStatus === 'uploaded' || c.processingStatus === 'processing'
+            (c) => ['uploaded', 'processing', 'parsing', 'scoring', 'finalizing'].includes(c.processingStatus)
         );
 
         if (hasProcessing && !isPolling) {
             setIsPolling(true);
             const interval = setInterval(() => {
                 loadCandidates(true);
-            }, 5000);
+            }, 3000); // Polling faster for granular status feel
 
             return () => {
                 clearInterval(interval);
@@ -53,6 +57,7 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
             };
         } else if (!hasProcessing && isPolling) {
             setIsPolling(false);
+            loadCandidates(true); // Final sync
         }
     }, [candidates]);
 
@@ -79,16 +84,37 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
         }
 
         try {
-            // Need to implement this in service
             const response = await api.delete(`/resumes/${id}`);
             if (response.data.success) {
                 toast.success('Candidate deleted');
-                loadCandidates(true);
+                setCandidates(prev => prev.filter(c => c._id !== id));
+                setSelectedIds(prev => prev.filter(cur => cur !== id));
             }
         } catch (error: any) {
             toast.error('Failed to delete candidate');
         }
     };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Delete ${selectedIds.length} candidates?`)) return;
+
+        try {
+            await Promise.all(selectedIds.map(id => api.delete(`/resumes/${id}`)));
+            toast.success(`${selectedIds.length} candidates deleted`);
+            setCandidates(prev => prev.filter(c => !selectedIds.includes(c._id)));
+            setSelectedIds([]);
+        } catch (error) {
+            toast.error('Bulk delete partially failed');
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(cur => cur !== id) : [...prev, id]
+        );
+    };
+
+    const selectedCandidates = candidates.filter(c => selectedIds.includes(c._id));
 
     const getStatusBadge = (status: Resume['processingStatus']) => {
         switch (status) {
@@ -99,11 +125,26 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
                         Queued
                     </Badge>
                 );
+            case 'parsing':
+                return (
+                    <Badge className="bg-yellow-100 text-yellow-600 animate-pulse border-none">
+                        <FileText className="h-3 w-3 mr-1" />
+                        Extracting...
+                    </Badge>
+                );
             case 'processing':
+            case 'scoring':
                 return (
                     <Badge className="bg-blue-100 text-blue-600 animate-pulse border-none">
                         <Zap className="h-3 w-3 mr-1" />
-                        Analyzing...
+                        AI Scoring...
+                    </Badge>
+                );
+            case 'finalizing':
+                return (
+                    <Badge className="bg-purple-100 text-purple-600 animate-pulse border-none">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Finalizing...
                     </Badge>
                 );
             case 'completed':
@@ -148,35 +189,81 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
 
     return (
         <div className="space-y-4">
-            {isPolling && (
-                <div className="flex items-center gap-2 text-xs font-bold text-blue-600 mb-4 ml-1">
-                    <div className="flex gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-bounce" />
-                        <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.2s]" />
-                        <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.4s]" />
-                    </div>
-                    UPDATING IN REAL-TIME
+            <div className="flex items-center justify-between gap-4 mb-2">
+                <div className="flex items-center gap-2">
+                    {isPolling && (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-primary animate-pulse tracking-widest uppercase">
+                            <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                            Live Sync
+                        </div>
+                    )}
                 </div>
-            )}
+
+                {selectedIds.length > 0 && (
+                    <div className="flex items-center gap-2 animate-fade-in">
+                        <span className="text-xs font-bold text-muted-foreground">{selectedIds.length} Selected</span>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleBulkDelete}
+                            className="h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider"
+                        >
+                            Delete
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowCompareModal(true)}
+                            disabled={selectedIds.length !== 2}
+                            className="h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider border-primary/30 text-primary hover:bg-primary/5"
+                        >
+                            Compare
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedIds([])}
+                            className="h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider"
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                )}
+            </div>
 
             <div className="space-y-4">
                 {sortedCandidates.map((candidate) => (
                     <div
                         key={candidate._id}
-                        className={`group p-6 rounded-3xl border transition-all duration-300 ${expandedId === candidate._id
-                            ? 'bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-900/50 shadow-xl shadow-blue-500/5'
-                            : 'bg-white/50 dark:bg-slate-900/30 border-slate-100 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700'
+                        className={`group p-6 glass-card relative overflow-hidden ${expandedId === candidate._id
+                            ? 'ring-2 ring-primary/30 shadow-2xl'
+                            : ''
                             }`}
                     >
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                            <div className="pt-1">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.includes(candidate._id)}
+                                    onChange={() => toggleSelect(candidate._id)}
+                                    className="w-4 h-4 rounded-md border-slate-300 text-primary focus:ring-primary/50 cursor-pointer"
+                                />
+                            </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-3 flex-wrap">
-                                    <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600">
+                                <div className="flex items-center gap-3 mb-3 flex-wrap text-foreground">
+                                    <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
                                         <FileText className="h-5 w-5" />
                                     </div>
-                                    <h3 className="font-bold text-slate-900 dark:text-white truncate">
-                                        {candidate.originalFilename}
-                                    </h3>
+                                    <div className="min-w-0">
+                                        <h3 className="font-bold truncate max-w-[250px] text-foreground">
+                                            {candidate.candidateName || candidate.originalFilename}
+                                        </h3>
+                                        {candidate.candidateName && (
+                                            <p className="text-[10px] text-slate-400 truncate">
+                                                {candidate.originalFilename}
+                                            </p>
+                                        )}
+                                    </div>
                                     {candidate.isTopPerformer && (
                                         <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-100 text-amber-600 text-[10px] font-black uppercase tracking-tighter shadow-sm border border-amber-200">
                                             <Star className="h-3 w-3 fill-amber-600" />
@@ -186,30 +273,39 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
                                     {getStatusBadge(candidate.processingStatus)}
                                 </div>
 
+                                {candidate.processingStatus !== 'completed' && candidate.processingStatus !== 'error' && (
+                                    <AnalysisStepper status={candidate.processingStatus} />
+                                )}
+
                                 {candidate.processingStatus === 'completed' && candidate.score !== undefined && (
-                                    <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-8">
                                         <div className="text-center">
-                                            <div className="text-3xl font-black text-blue-600 leading-none">
+                                            <div className="text-4xl font-black text-primary leading-none drop-shadow-sm">
                                                 {candidate.score}
                                                 <span className="text-sm text-slate-400 font-medium">/10</span>
                                             </div>
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">AI Score</div>
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Overall</div>
                                         </div>
 
-                                        <div className="flex-1 max-w-xs space-y-1">
-                                            <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                                                <span>Match Probability</span>
-                                                <span>{candidate.score * 10}%</span>
-                                            </div>
-                                            <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full transition-all duration-1000 ${candidate.score >= 8 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
-                                                        candidate.score >= 5 ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' :
-                                                            'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'
-                                                        }`}
-                                                    style={{ width: `${(candidate.score / 10) * 100}%` }}
-                                                />
-                                            </div>
+                                        <div className="grid grid-cols-3 gap-6 flex-1 max-w-md">
+                                            {[
+                                                { label: 'Technical', val: (candidate.geminiAnalysis || candidate.analysis)?.technicalFit },
+                                                { label: 'Experience', val: (candidate.geminiAnalysis || candidate.analysis)?.experienceMatch },
+                                                { label: 'Education', val: (candidate.geminiAnalysis || candidate.analysis)?.educationLevel }
+                                            ].map((m, i) => (
+                                                <div key={i} className="space-y-1">
+                                                    <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                                        <span>{m.label}</span>
+                                                        <span>{m.val ? m.val * 10 : 0}%</span>
+                                                    </div>
+                                                    <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-primary transition-all duration-1000"
+                                                            style={{ width: `${(m.val || 0) * 10}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
@@ -231,7 +327,7 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
                                         variant="ghost"
                                         size="icon"
                                         onClick={(e) => handleDeleteCandidate(e, candidate._id)}
-                                        className="h-8 w-8 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                        className="h-8 w-8 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all border-none"
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </Button>
@@ -240,7 +336,7 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => setExpandedId(expandedId === candidate._id ? null : candidate._id)}
-                                            className="rounded-xl hover:bg-white dark:hover:bg-slate-800 text-blue-600 font-bold text-xs h-8"
+                                            className="rounded-xl hover:bg-white dark:hover:bg-slate-800 text-primary font-bold text-xs h-8 border-none"
                                         >
                                             {expandedId === candidate._id ? (
                                                 <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Hide</>
@@ -259,7 +355,7 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
                                     <div className="space-y-4">
                                         <section>
                                             <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                                                <Zap className="h-3.5 w-3.5 text-blue-600" />
+                                                <Zap className="h-3.5 w-3.5 text-primary" />
                                                 Detected Skills
                                             </h4>
                                             <div className="flex flex-wrap gap-1.5">
@@ -276,14 +372,14 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
 
                                         <section>
                                             <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                                                <GraduationCap className="h-3.5 w-3.5 text-blue-600" />
+                                                <GraduationCap className="h-3.5 w-3.5 text-primary" />
                                                 Experience & Education
                                             </h4>
                                             <div className="space-y-2">
-                                                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 text-sm">
+                                                <div className="p-3 rounded-2xl bg-white/40 dark:bg-slate-800/50 text-sm border border-white/20">
                                                     <div className="flex justify-between items-center mb-1">
                                                         <span className="text-slate-500">Years of Exp:</span>
-                                                        <span className="font-bold text-slate-900 dark:text-white capitalize">
+                                                        <span className="font-bold capitalize">
                                                             {candidate.geminiAnalysis?.yearsExperience || candidate.analysis?.yearsExperience || 'N/A'}
                                                         </span>
                                                     </div>
@@ -297,18 +393,35 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
                                         </section>
                                     </div>
 
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
                                         <section>
                                             <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                                                 <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
                                                 Fit Justification
                                             </h4>
-                                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100/50 dark:border-amber-900/30">
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic bg-white/40 dark:bg-slate-800/40 p-4 rounded-2xl border border-white/20">
                                                 "{candidate.geminiAnalysis?.justification || candidate.analysis?.justification || 'No justification provided'}"
                                             </p>
                                         </section>
 
-                                        {(candidate.geminiAnalysis?.warnings?.length || 0) > 0 || (candidate.analysis?.warnings?.length || 0) > 0 && (
+                                        {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).length > 0 && (
+                                            <section className="p-4 rounded-2xl border border-primary/20 bg-primary/5">
+                                                <h4 className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider mb-3">
+                                                    <Star className="h-3.5 w-3.5" />
+                                                    Suggested Interview Questions
+                                                </h4>
+                                                <ul className="space-y-2">
+                                                    {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).map((q, idx) => (
+                                                        <li key={idx} className="text-xs flex gap-2">
+                                                            <span className="font-bold text-primary">{idx + 1}.</span>
+                                                            <span className="text-foreground/80">{q}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </section>
+                                        )}
+
+                                        {((candidate.geminiAnalysis?.warnings?.length || 0) > 0 || (candidate.analysis?.warnings?.length || 0) > 0) && (
                                             <section>
                                                 <h4 className="flex items-center gap-2 text-xs font-bold text-red-500 uppercase tracking-wider mb-2">
                                                     <ShieldAlert className="h-3.5 w-3.5" />
@@ -331,6 +444,13 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
                     </div>
                 ))}
             </div>
+
+            {showCompareModal && (
+                <CompareCandidatesModal
+                    candidates={selectedCandidates}
+                    onClose={() => setShowCompareModal(false)}
+                />
+            )}
         </div>
     );
 }
