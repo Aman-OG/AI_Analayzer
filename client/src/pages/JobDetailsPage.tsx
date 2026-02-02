@@ -297,7 +297,12 @@ export function JobDetailsPage() {
                         </h2>
                     </div>
 
-                    <CandidateList jobId={id!} refreshTrigger={refreshTrigger} />
+                    <CandidateList
+                        jobId={id!}
+                        jobTitle={job.title}
+                        company={job.company}
+                        refreshTrigger={refreshTrigger}
+                    />
                 </div>
             </div>
         </div>
