@@ -21,13 +21,18 @@ import {
 import { toast } from 'sonner';
 import { AnalysisStepper } from './AnalysisStepper';
 import { CompareCandidatesModal } from './CompareCandidatesModal';
+import { CandidateCardSkeleton } from './ui/CandidateCardSkeleton';
+import { exportTopCandidatesToPDF } from '../lib/exportToPDF';
+import { FileDown } from 'lucide-react';
 
 interface CandidateListProps {
     jobId: string;
+    jobTitle?: string;
+    company?: string;
     refreshTrigger?: number;
 }
 
-export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
+export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: CandidateListProps) {
     const [candidates, setCandidates] = useState<Resume[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -39,27 +44,25 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
         loadCandidates();
     }, [jobId, refreshTrigger]);
 
-    // Auto-refresh polling
+    // Auto-refresh polling with robust setTimeout pattern
     useEffect(() => {
         const hasProcessing = candidates.some(
             (c) => ['uploaded', 'processing', 'parsing', 'scoring', 'finalizing'].includes(c.processingStatus)
         );
 
-        if (hasProcessing && !isPolling) {
-            setIsPolling(true);
-            const interval = setInterval(() => {
-                loadCandidates(true);
-            }, 3000); // Polling faster for granular status feel
-
-            return () => {
-                clearInterval(interval);
-                setIsPolling(false);
-            };
-        } else if (!hasProcessing && isPolling) {
-            setIsPolling(false);
-            loadCandidates(true); // Final sync
+        if (!hasProcessing) {
+            if (isPolling) setIsPolling(false);
+            return;
         }
-    }, [candidates]);
+
+        if (!isPolling) setIsPolling(true);
+
+        const timer = setTimeout(() => {
+            loadCandidates(true);
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [candidates, jobId]);
 
     const loadCandidates = async (silent = false) => {
         try {
@@ -168,7 +171,7 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
         return (
             <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-32 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                    <CandidateCardSkeleton key={i} />
                 ))}
             </div>
         );
@@ -196,6 +199,20 @@ export function CandidateList({ jobId, refreshTrigger }: CandidateListProps) {
                             <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
                             Live Sync
                         </div>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {candidates.length > 0 && candidates.some(c => c.processingStatus === 'completed') && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => exportTopCandidatesToPDF(jobTitle || 'Job Position', company || '', candidates)}
+                            className="h-9 rounded-xl text-[10px] font-bold uppercase tracking-wider border-slate-200 hover:bg-slate-50 gap-2 shadow-sm"
+                        >
+                            <FileDown className="h-4 w-4 text-primary" />
+                            Export Top 3
+                        </Button>
                     )}
                 </div>
 

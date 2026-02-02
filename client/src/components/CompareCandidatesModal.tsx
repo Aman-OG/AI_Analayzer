@@ -51,9 +51,14 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
                             <h3 className="text-muted-foreground text-sm uppercase tracking-widest font-semibold">Metrics</h3>
                         </div>
                         {/* Candidate 1 Header */}
-                        <div className="text-center">
-                            <div className="w-20 h-20 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-primary/30">
-                                <span className="text-2xl font-bold text-primary">
+                        <div className="text-center relative">
+                            {c1.score !== undefined && c2.score !== undefined && c1.score >= c2.score && (
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg z-20 animate-bounce">
+                                    Best Fit
+                                </div>
+                            )}
+                            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 border transition-all ${c1.score && c1.score >= (c2.score || 0) ? 'bg-primary/20 border-primary/50 scale-105 shadow-xl shadow-primary/10' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                                <span className={`text-2xl font-bold ${c1.score && c1.score >= (c2.score || 0) ? 'text-primary' : 'text-slate-400'}`}>
                                     {(c1.candidateName || c1.originalFilename)[0].toUpperCase()}
                                 </span>
                             </div>
@@ -64,9 +69,14 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
                             <p className="text-[10px] text-muted-foreground">{new Date(c1.uploadTimestamp).toLocaleDateString()}</p>
                         </div>
                         {/* Candidate 2 Header */}
-                        <div className="text-center">
-                            <div className="w-20 h-20 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-500/30">
-                                <span className="text-2xl font-bold text-emerald-500">
+                        <div className="text-center relative">
+                            {c1.score !== undefined && c2.score !== undefined && c2.score > c1.score && (
+                                <div className="absolute -top-4 left-1/2 -translation-x-1/2 px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg z-20 animate-bounce">
+                                    Best Fit
+                                </div>
+                            )}
+                            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 border transition-all ${c2.score && c2.score > (c1.score || 0) ? 'bg-emerald-500/20 border-emerald-500/50 scale-105 shadow-xl shadow-emerald-500/10' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                                <span className={`text-2xl font-bold ${c2.score && c2.score > (c1.score || 0) ? 'text-emerald-500' : 'text-slate-400'}`}>
                                     {(c2.candidateName || c2.originalFilename)[0].toUpperCase()}
                                 </span>
                             </div>
