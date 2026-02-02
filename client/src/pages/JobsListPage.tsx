@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import {
     Plus,
@@ -18,6 +18,7 @@ export function JobsListPage() {
     const [jobs, setJobs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchJobs();
@@ -96,7 +97,11 @@ export function JobsListPage() {
             ) : filteredJobs.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredJobs.map((job) => (
-                        <Link key={job._id} to={`/jobs/${job._id}`} className="group">
+                        <div
+                            key={job._id}
+                            onClick={() => navigate(`/jobs/${job._id}`)}
+                            className="group cursor-pointer block h-full"
+                        >
                             <div className="h-full p-6 rounded-3xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 relative overflow-hidden">
                                 {/* Subtle Background Icon */}
                                 <Briefcase className="absolute -right-4 -bottom-4 h-24 w-24 text-slate-100 dark:text-slate-800 transition-colors group-hover:text-blue-500/10" />
@@ -118,14 +123,10 @@ export function JobsListPage() {
                                             <Link
                                                 to={`/jobs/edit/${job._id}`}
                                                 onClick={(e) => e.stopPropagation()}
+                                                className="h-8 w-8 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center justify-center p-2"
+                                                title="Edit Job"
                                             >
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                                                >
-                                                    <Edit3 className="h-4 w-4" />
-                                                </Button>
+                                                <Edit3 className="h-4 w-4" />
                                             </Link>
                                         </div>
                                     </div>
@@ -156,7 +157,7 @@ export function JobsListPage() {
                                     </div>
                                 </div>
                             </div>
-                        </Link>
+                        </div>
                     ))}
                 </div>
             ) : (
