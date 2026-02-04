@@ -1,9 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, User, LayoutDashboard, Briefcase, FileText, Shield } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, Briefcase, Moon, Sun, Laptop } from 'lucide-react';
 import { useState } from 'react';
-import { ThemeSwitcher } from '../ThemeSwitcher';
+import { useTheme } from '../ThemeProvider';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { user, signOut } = useAuth();
@@ -25,7 +25,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <nav className="sticky top-0 z-40 w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 supports-[backdrop-filter]:bg-white/60">
                 <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-10">
-                        <Link to="/" className="flex items-center gap-3 group">
+                        <Link to={user ? "/jobs" : "/"} className="flex items-center gap-3 group">
                             <div className="h-10 w-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
                                 <LayoutDashboard className="h-5 w-5" />
                             </div>
@@ -41,39 +41,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                         Positions
                                     </Button>
                                 </Link>
-                                <Link to="/analysis/history">
-                                    <Button variant="ghost" className="text-slate-600 dark:text-slate-400 font-bold hover:text-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-xl px-4">
-                                        <FileText className="mr-2 h-4 w-4" />
-                                        History
-                                    </Button>
-                                </Link>
                             </div>
                         )}
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <ThemeSwitcher />
                         {user ? (
                             <div className="relative">
                                 <Button
                                     variant="ghost"
-                                    className="h-12 pl-2 pr-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all gap-3"
+                                    className="h-12 pl-2 pr-4 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all gap-3"
                                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                                 >
-                                    <div className="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-blue-500/20">
-                                        {user.email?.[0].toUpperCase()}
+                                    <div className="h-9 w-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-blue-500/20">
+                                        {(user.user_metadata?.full_name?.[0] || user.email?.[0] || '?').toUpperCase()}
                                     </div>
                                     <div className="flex flex-col items-start text-left">
                                         <span className="text-sm font-bold text-slate-900 dark:text-white leading-none">
-                                            {user.email?.split('@')[0]}
-                                        </span>
-                                        <span className="text-[10px] text-slate-500 font-medium mt-1">
-                                            Premium Plan
+                                            {user.user_metadata?.full_name?.split(' ')[0] || user.email?.split('@')[0]}
                                         </span>
                                     </div>
                                 </Button>
 
-                                {/* Profile Dropdown */}
                                 {isProfileOpen && (
                                     <>
                                         <div className="fixed inset-0 z-10" onClick={() => setIsProfileOpen(false)} />
@@ -82,18 +71,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
                                                 <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.email}</p>
                                             </div>
+
+                                            <div className="px-2 mb-2">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-2">Appearance</p>
+                                                <div className="grid grid-cols-3 gap-1 bg-slate-50 dark:bg-slate-950 p-1 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                                    <ThemeButton mode="light" icon={<Sun className="h-3.5 w-3.5" />} />
+                                                    <ThemeButton mode="dark" icon={<Moon className="h-3.5 w-3.5" />} />
+                                                    <ThemeButton mode="system" icon={<Laptop className="h-3.5 w-3.5" />} />
+                                                </div>
+                                            </div>
+
                                             <Link to="/profile">
                                                 <Button variant="ghost" className="w-full justify-start h-11 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl">
                                                     <User className="mr-3 h-4 w-4" />
                                                     My Profile
                                                 </Button>
                                             </Link>
-                                            <Link to="/profile#security">
-                                                <Button variant="ghost" className="w-full justify-start h-11 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl">
-                                                    <Shield className="mr-3 h-4 w-4" />
-                                                    Security Settings
-                                                </Button>
-                                            </Link>
+
                                             <Button
                                                 variant="ghost"
                                                 className="w-full justify-start h-11 text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
@@ -128,6 +122,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </main>
         </div>
     );
+
+    function ThemeButton({ mode, icon }: { mode: 'light' | 'dark' | 'system', icon: React.ReactNode }) {
+        const { theme, setTheme } = useTheme();
+        const isActive = theme === mode;
+
+        return (
+            <button
+                onClick={() => setTheme(mode)}
+                className={`flex flex-col items-center justify-center gap-1.5 py-2 rounded-xl transition-all duration-200 ${isActive
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    }`}
+            >
+                {icon}
+                <span className="text-[10px] font-black uppercase tracking-tighter">{mode}</span>
+            </button>
+        );
+    }
 }
 
 // Add click outside handler later if needed for dropdown

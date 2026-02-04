@@ -70,7 +70,7 @@ export function LoginPage() {
                                 <input
                                     id="email"
                                     type="email"
-                                    placeholder="name@company.com"
+                                    placeholder="someone@gmail.com"
                                     className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -129,7 +129,7 @@ export function LoginPage() {
                                 variant="outline"
                                 type="button"
                                 onClick={() => handleOAuthLogin('google')}
-                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-slate-50 transition-colors"
+                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-white dark:hover:bg-slate-800 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300"
                             >
                                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                                     <path
@@ -155,7 +155,7 @@ export function LoginPage() {
                                 variant="outline"
                                 type="button"
                                 onClick={() => handleOAuthLogin('github')}
-                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-slate-50 transition-colors"
+                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-white dark:hover:bg-slate-800 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300"
                             >
                                 <Github className="mr-2 h-4 w-4" />
                                 GitHub Account
