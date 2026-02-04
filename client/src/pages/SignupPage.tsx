@@ -10,7 +10,7 @@ import { PasswordStrength } from '../components/ui/PasswordStrength';
 export function SignupPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [fullName, setFullName] = useState('');
+    const [name, setName] = useState('');
     const [loading, setLoading] = useState(false);
     const [isPasswordValid, setIsPasswordValid] = useState(false);
     const navigate = useNavigate();
@@ -45,7 +45,7 @@ export function SignupPage() {
                 password,
                 options: {
                     data: {
-                        full_name: fullName,
+                        full_name: name,
                     },
                 },
             });
@@ -76,18 +76,18 @@ export function SignupPage() {
                 <div className="p-8 rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none">
                     <form onSubmit={handleSignup} className="space-y-5">
                         <div className="space-y-2">
-                            <label htmlFor="fullName" className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
-                                Full Name
+                            <label htmlFor="name" className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
+                                Name
                             </label>
                             <div className="relative group">
                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                                 <input
-                                    id="fullName"
+                                    id="name"
                                     type="text"
-                                    placeholder="John Doe"
+                                    placeholder="Your Name"
                                     className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
                                     required
                                 />
                             </div>
@@ -102,7 +102,7 @@ export function SignupPage() {
                                 <input
                                     id="email"
                                     type="email"
-                                    placeholder="name@company.com"
+                                    placeholder="someone@gmail.com"
                                     className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -160,7 +160,7 @@ export function SignupPage() {
                                 variant="outline"
                                 type="button"
                                 onClick={() => handleOAuthLogin('google')}
-                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-slate-50 transition-colors"
+                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-white dark:hover:bg-slate-800 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300"
                             >
                                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                                     <path
@@ -186,7 +186,7 @@ export function SignupPage() {
                                 variant="outline"
                                 type="button"
                                 onClick={() => handleOAuthLogin('github')}
-                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-slate-50 transition-colors"
+                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-800 font-bold hover:bg-white dark:hover:bg-slate-800 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300"
                             >
                                 <Github className="mr-2 h-4 w-4" />
                                 GitHub Account
