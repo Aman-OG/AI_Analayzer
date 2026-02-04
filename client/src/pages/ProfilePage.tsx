@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { Mail, Shield, Calendar, CreditCard, Sparkles, Lock, CheckCircle2 } from 'lucide-react';
+import { Mail, Calendar, Sparkles, Lock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
@@ -92,20 +92,11 @@ export function ProfilePage() {
                             </div>
                             <p className="text-slate-500 dark:text-slate-400 font-bold">{user.email}</p>
                         </div>
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
-                            <span className="px-4 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest">
-                                Active Professional
-                            </span>
-                            <span className="px-4 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                <Shield className="h-3 w-3" />
-                                Premium Member
-                            </span>
-                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="max-w-xl mx-auto">
                 {/* Account Details */}
                 <div className="p-8 rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-8">
                     <div className="flex items-center justify-between">
@@ -187,46 +178,6 @@ export function ProfilePage() {
                                 </div>
                             </form>
                         )}
-                    </div>
-                </div>
-
-                {/* Subscription Card */}
-                <div className="p-8 rounded-[32px] bg-blue-600 text-white shadow-xl shadow-blue-500/20 space-y-6 relative overflow-hidden group">
-                    <CreditCard className="absolute -right-4 -bottom-4 h-32 w-32 text-white/10 group-hover:scale-110 transition-transform" />
-
-                    <div className="relative z-10 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-black">Professional Plan</h2>
-                            <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md">
-                                <Sparkles className="h-5 w-5" />
-                            </div>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-blue-100 text-sm font-medium">Monthly Access</p>
-                            <p className="text-3xl font-black tracking-tight">Active Coverage</p>
-                        </div>
-                        <div className="pt-6 border-t border-white/20">
-                            <ul className="space-y-4">
-                                <li className="flex items-center gap-3 text-sm font-bold">
-                                    <div className="p-1 rounded-md bg-white/20">
-                                        <CheckCircle2 className="h-3.5 w-3.5" />
-                                    </div>
-                                    Unlimited AI Resume Rankings
-                                </li>
-                                <li className="flex items-center gap-3 text-sm font-bold">
-                                    <div className="p-1 rounded-md bg-white/20">
-                                        <CheckCircle2 className="h-3.5 w-3.5" />
-                                    </div>
-                                    Custom AI Interview Questions
-                                </li>
-                                <li className="flex items-center gap-3 text-sm font-bold">
-                                    <div className="p-1 rounded-md bg-white/20">
-                                        <CheckCircle2 className="h-3.5 w-3.5" />
-                                    </div>
-                                    Advanced Candidate Comparison
-                                </li>
-                            </ul>
-                        </div>
                     </div>
                 </div>
             </div>
