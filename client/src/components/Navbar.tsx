@@ -45,8 +45,8 @@ export function Navbar() {
         <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                 <Link to="/" className="flex items-center space-x-2">
-                    <Briefcase className="h-6 w-6 text-violet-600" />
-                    <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                    <Briefcase className="h-6 w-6 text-blue-600" />
+                    <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                         AI Resume Analyzer
                     </span>
                 </Link>

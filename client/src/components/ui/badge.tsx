@@ -2,7 +2,7 @@ import * as React from "react"
 import { cn } from "../../lib/utils"
 
 const badgeVariants = {
-    default: "bg-violet-600 text-white hover:bg-violet-700",
+    default: "bg-blue-600 text-white hover:bg-blue-700",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
     destructive: "bg-red-600 text-white hover:bg-red-700",
     outline: "border border-input bg-background hover:bg-accent",

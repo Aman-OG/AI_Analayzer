@@ -145,14 +145,14 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                 );
             case 'finalizing':
                 return (
-                    <Badge className="bg-purple-100 text-purple-600 animate-pulse border-none">
+                    <Badge className="bg-indigo-100 text-indigo-600 animate-pulse border-none">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Finalizing...
                     </Badge>
                 );
             case 'completed':
                 return (
-                    <Badge className="bg-emerald-100 text-emerald-600 border-none">
+                    <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 pointer-events-none">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Matched
                     </Badge>
@@ -259,12 +259,18 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                     >
                         <div className="flex items-start gap-4">
                             <div className="pt-1">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedIds.includes(candidate._id)}
-                                    onChange={() => toggleSelect(candidate._id)}
-                                    className="w-4 h-4 rounded-md border-slate-300 text-primary focus:ring-primary/50 cursor-pointer"
-                                />
+                                <div className="relative flex items-center justify-center">
+                                    <input
+                                        type="checkbox"
+                                        id={`check-${candidate._id}`}
+                                        checked={selectedIds.includes(candidate._id)}
+                                        onChange={() => toggleSelect(candidate._id)}
+                                        className="peer absolute h-5 w-5 opacity-0 cursor-pointer z-10"
+                                    />
+                                    <div className="h-5 w-5 rounded-lg border-2 border-slate-300 dark:border-slate-700 bg-white/10 dark:bg-slate-900/10 backdrop-blur-md transition-all peer-checked:bg-primary peer-checked:border-primary peer-hover:border-primary/50 flex items-center justify-center">
+                                        <CheckCircle2 className={`h-3.5 w-3.5 text-white transition-opacity ${selectedIds.includes(candidate._id) ? 'opacity-100' : 'opacity-0'}`} />
+                                    </div>
+                                </div>
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-3 mb-3 flex-wrap text-foreground">

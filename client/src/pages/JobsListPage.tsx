@@ -9,10 +9,17 @@ import {
     Calendar,
     ArrowUpRight,
     Trash2,
-    Edit3
+    Edit3,
+    MoreVertical
 } from 'lucide-react';
 import { jobService } from '../services';
 import { toast } from 'sonner';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 
 export function JobsListPage() {
     const [jobs, setJobs] = useState<any[]>([]);
@@ -111,23 +118,34 @@ export function JobsListPage() {
                                         <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600">
                                             <Briefcase className="h-5 w-5" />
                                         </div>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 rounded-full hover:bg-red-50 hover:text-red-600 transition-colors"
-                                                onClick={(e) => handleDeleteJob(e, job._id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                            <Link
-                                                to={`/jobs/edit/${job._id}`}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="h-8 w-8 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center justify-center p-2"
-                                                title="Edit Job"
-                                            >
-                                                <Edit3 className="h-4 w-4" />
-                                            </Link>
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                                    >
+                                                        <MoreVertical className="h-4 w-4 text-slate-500" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-32">
+                                                    <DropdownMenuItem onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/jobs/edit/${job._id}`);
+                                                    }}>
+                                                        <Edit3 className="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        className="text-red-600 focus:text-red-600"
+                                                        onClick={(e) => handleDeleteJob(e, job._id)}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
 
