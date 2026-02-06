@@ -145,6 +145,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <button
                 onClick={() => {
                     setTheme(mode);
+                    setIsProfileOpen(false);
                 }}
                 className={`flex flex-col items-center justify-center gap-1.5 py-2 rounded-xl transition-all duration-200 ${isActive
                     ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm'
