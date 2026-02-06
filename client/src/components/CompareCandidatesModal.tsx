@@ -12,15 +12,15 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
     const [c1, c2] = candidates;
 
     const renderScoreRow = (label: string, score1: number | undefined, score2: number | undefined) => (
-        <div className="grid grid-cols-3 py-4 border-b border-white/10 items-center">
+        <div className="grid grid-cols-3 py-4 border-b border-slate-200 dark:border-white/10 items-center">
             <div className="text-sm font-medium text-muted-foreground">{label}</div>
             <div className="text-center">
-                <span className={`text-lg font-bold ${score1 && score1 >= 7 ? 'text-green-400' : 'text-primary'}`}>
+                <span className={`text-lg font-bold ${score1 && score1 >= 7 ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`}>
                     {score1 ?? 'N/A'}/10
                 </span>
             </div>
             <div className="text-center">
-                <span className={`text-lg font-bold ${score2 && score2 >= 7 ? 'text-green-400' : 'text-primary'}`}>
+                <span className={`text-lg font-bold ${score2 && score2 >= 7 ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`}>
                     {score2 ?? 'N/A'}/10
                 </span>
             </div>
@@ -31,120 +31,156 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
             <div className="glass-card w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
-                        <Zap className="text-primary w-6 h-6" />
+                <div className="p-6 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-white dark:bg-slate-900/50 backdrop-blur-md">
+                    <h2 className="text-2xl font-black flex items-center gap-3 text-foreground tracking-tight">
+                        <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                            <Zap className="w-6 h-6 fill-primary/20" />
+                        </div>
                         Candidate Comparison
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        className="p-2.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-2xl transition-all duration-200 text-muted-foreground hover:text-foreground active:scale-95"
                     >
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
-                    <div className="grid grid-cols-3 gap-8 mb-8">
-                        <div className="pt-12">
-                            <h3 className="text-muted-foreground text-sm uppercase tracking-widest font-semibold">Metrics</h3>
-                        </div>
-                        {/* Candidate 1 Header */}
-                        <div className="text-center relative">
-                            {c1.score !== undefined && c2.score !== undefined && c1.score >= c2.score && (
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg z-20 animate-bounce">
-                                    Best Fit
+                {/* Content Area */}
+                <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-950/40">
+                    <div className="p-8">
+                        <div className="grid grid-cols-3 gap-12 mb-10">
+                            <div className="pt-16">
+                                <h3 className="text-muted-foreground text-[10px] uppercase tracking-[0.2em] font-black opacity-50">Core Metrics</h3>
+                            </div>
+                            {/* Candidate 1 Header */}
+                            <div className="text-center relative group">
+                                {c1.score !== undefined && c2.score !== undefined && c1.score >= c2.score && (
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_4px_20px_rgba(245,158,11,0.4)] z-20 animate-bounce">
+                                        Best Fit
+                                    </div>
+                                )}
+                                <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border-2 transition-all duration-500 shadow-sm ${c1.score && c1.score >= (c2.score || 0)
+                                    ? 'bg-primary/5 border-primary/40 scale-105 shadow-[0_20px_40px_-15px_rgba(59,130,246,0.2)]'
+                                    : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800'}`}>
+                                    <span className={`text-3xl font-black ${c1.score && c1.score >= (c2.score || 0) ? 'text-primary' : 'text-slate-300'}`}>
+                                        {(c1.candidateName || c1.originalFilename)[0].toUpperCase()}
+                                    </span>
                                 </div>
-                            )}
-                            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 border transition-all ${c1.score && c1.score >= (c2.score || 0) ? 'bg-primary/20 border-primary/50 scale-105 shadow-xl shadow-primary/10' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
-                                <span className={`text-2xl font-bold ${c1.score && c1.score >= (c2.score || 0) ? 'text-primary' : 'text-slate-400'}`}>
-                                    {(c1.candidateName || c1.originalFilename)[0].toUpperCase()}
-                                </span>
+                                <h4 className="font-black text-xl text-foreground tracking-tight mb-1 truncate px-2">
+                                    {c1.candidateName || c1.originalFilename}
+                                </h4>
+                                {c1.candidateName && <p className="text-[10px] text-slate-400 font-bold truncate px-4 mb-1 uppercase tracking-tighter">{c1.originalFilename}</p>}
+                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">{new Date(c1.uploadTimestamp).toLocaleDateString()}</p>
                             </div>
-                            <h4 className="font-bold text-lg truncate px-2">
-                                {c1.candidateName || c1.originalFilename}
-                            </h4>
-                            {c1.candidateName && <p className="text-[10px] text-slate-400 truncate px-4">{c1.originalFilename}</p>}
-                            <p className="text-[10px] text-muted-foreground">{new Date(c1.uploadTimestamp).toLocaleDateString()}</p>
-                        </div>
-                        {/* Candidate 2 Header */}
-                        <div className="text-center relative">
-                            {c1.score !== undefined && c2.score !== undefined && c2.score > c1.score && (
-                                <div className="absolute -top-4 left-1/2 -translation-x-1/2 px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg z-20 animate-bounce">
-                                    Best Fit
+
+                            {/* Candidate 2 Header */}
+                            <div className="text-center relative group">
+                                {c1.score !== undefined && c2.score !== undefined && c2.score > c1.score && (
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-emerald-400 to-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_4px_20px_rgba(16,185,129,0.4)] z-20 animate-bounce">
+                                        Best Fit
+                                    </div>
+                                )}
+                                <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border-2 transition-all duration-500 shadow-sm ${c2.score && c2.score > (c1.score || 0)
+                                    ? 'bg-emerald-50/50 dark:bg-emerald-500/10 border-emerald-500/40 scale-105 shadow-[0_20px_40px_-15px_rgba(16,185,129,0.2)]'
+                                    : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800'}`}>
+                                    <span className={`text-3xl font-black ${c2.score && c2.score > (c1.score || 0) ? 'text-emerald-500' : 'text-slate-300'}`}>
+                                        {(c2.candidateName || c2.originalFilename)[0].toUpperCase()}
+                                    </span>
                                 </div>
-                            )}
-                            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 border transition-all ${c2.score && c2.score > (c1.score || 0) ? 'bg-emerald-500/20 border-emerald-500/50 scale-105 shadow-xl shadow-emerald-500/10' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
-                                <span className={`text-2xl font-bold ${c2.score && c2.score > (c1.score || 0) ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                    {(c2.candidateName || c2.originalFilename)[0].toUpperCase()}
-                                </span>
-                            </div>
-                            <h4 className="font-bold text-lg truncate px-2">
-                                {c2.candidateName || c2.originalFilename}
-                            </h4>
-                            {c2.candidateName && <p className="text-[10px] text-slate-400 truncate px-4">{c2.originalFilename}</p>}
-                            <p className="text-[10px] text-muted-foreground">{new Date(c2.uploadTimestamp).toLocaleDateString()}</p>
-                        </div>
-                    </div>
-
-                    {/* Scoring Section */}
-                    <div className="space-y-1">
-                        {renderScoreRow('Fit Score', c1.score, c2.score)}
-                        {renderScoreRow('Technical Fit', c1.geminiAnalysis?.technicalFit, c2.geminiAnalysis?.technicalFit)}
-                        {renderScoreRow('Experience', c1.geminiAnalysis?.experienceMatch, c2.geminiAnalysis?.experienceMatch)}
-                        {renderScoreRow('Education', c1.geminiAnalysis?.educationLevel, c2.geminiAnalysis?.educationLevel)}
-                    </div>
-
-                    {/* Details Section */}
-                    <div className="grid grid-cols-3 gap-8 mt-8 border-t border-white/10 pt-8">
-                        <div className="space-y-12">
-                            <div>
-                                <h3 className="flex items-center gap-2 text-sm font-bold text-muted-foreground uppercase"><Briefcase className="w-4 h-4" /> Experience</h3>
-                            </div>
-                            <div>
-                                <h3 className="flex items-center gap-2 text-sm font-bold text-muted-foreground uppercase"><Trophy className="w-4 h-4" /> Key Skills</h3>
-                            </div>
-                            <div>
-                                <h3 className="flex items-center gap-2 text-sm font-bold text-muted-foreground uppercase"><AlertTriangle className="w-4 h-4" /> Warnings</h3>
+                                <h4 className="font-black text-xl text-foreground tracking-tight mb-1 truncate px-2">
+                                    {c2.candidateName || c2.originalFilename}
+                                </h4>
+                                {c2.candidateName && <p className="text-[10px] text-slate-400 font-bold truncate px-4 mb-1 uppercase tracking-tighter">{c2.originalFilename}</p>}
+                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">{new Date(c2.uploadTimestamp).toLocaleDateString()}</p>
                             </div>
                         </div>
 
-                        {/* Candidate 1 Data */}
-                        <div className="space-y-12">
-                            <div className="text-sm leading-relaxed">{c1.geminiAnalysis?.yearsExperience || 'N/A'} years</div>
-                            <div className="flex flex-wrap gap-1">
-                                {c1.geminiAnalysis?.skills.slice(0, 8).map(skill => (
-                                    <span key={skill} className="px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-md text-[10px]">{skill}</span>
-                                ))}
-                            </div>
-                            <div className="space-y-2">
-                                {c1.geminiAnalysis?.warnings.map((w, i) => (
-                                    <p key={i} className="text-[10px] text-amber-500 flex gap-1"><AlertTriangle className="w-3 h-3 flex-shrink-0" /> {w}</p>
-                                ))}
-                            </div>
+                        {/* Scoring Section */}
+                        <div className="space-y-1 mb-10 bg-slate-50/50 dark:bg-white/[0.02] p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/[0.05]">
+                            {renderScoreRow('Fit Score', c1.score, c2.score)}
+                            {renderScoreRow('Technical Fit', (c1.geminiAnalysis || c1.analysis)?.technicalFit, (c2.geminiAnalysis || c2.analysis)?.technicalFit)}
+                            {renderScoreRow('Experience', (c1.geminiAnalysis || c1.analysis)?.experienceMatch, (c2.geminiAnalysis || c2.analysis)?.experienceMatch)}
+                            {renderScoreRow('Education', (c1.geminiAnalysis || c1.analysis)?.educationLevel, (c2.geminiAnalysis || c2.analysis)?.educationLevel)}
                         </div>
 
-                        {/* Candidate 2 Data */}
-                        <div className="space-y-12">
-                            <div className="text-sm leading-relaxed">{c2.geminiAnalysis?.yearsExperience || 'N/A'} years</div>
-                            <div className="flex flex-wrap gap-1">
-                                {c2.geminiAnalysis?.skills.slice(0, 8).map(skill => (
-                                    <span key={skill} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md text-[10px]">{skill}</span>
-                                ))}
+                        {/* Details Section */}
+                        <div className="grid grid-cols-3 gap-12 pt-4">
+                            <div className="space-y-16">
+                                <div>
+                                    <h3 className="flex items-center gap-3 text-[11px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                                        <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5"><Briefcase className="w-3.5 h-3.5" /></div>
+                                        Experience
+                                    </h3>
+                                </div>
+                                <div>
+                                    <h3 className="flex items-center gap-3 text-[11px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                                        <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5"><Trophy className="w-3.5 h-3.5" /></div>
+                                        Key Skills
+                                    </h3>
+                                </div>
+                                <div>
+                                    <h3 className="flex items-center gap-3 text-[11px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                                        <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5"><AlertTriangle className="w-3.5 h-3.5" /></div>
+                                        Warnings
+                                    </h3>
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                {c2.geminiAnalysis?.warnings.map((w, i) => (
-                                    <p key={i} className="text-[10px] text-amber-500 flex gap-1"><AlertTriangle className="w-3 h-3 flex-shrink-0" /> {w}</p>
-                                ))}
+
+                            {/* Candidate 1 Data */}
+                            <div className="space-y-16">
+                                <div className="text-sm font-bold text-foreground">
+                                    <span className="text-2xl font-black text-primary mr-2">{(c1.geminiAnalysis || c1.analysis)?.yearsExperience || 'N/A'}</span>
+                                    <span className="text-muted-foreground uppercase text-[10px] tracking-widest">Years</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(c1.geminiAnalysis?.skills || c1.analysis?.skills || []).slice(0, 10).map(skill => (
+                                        <span key={skill} className="px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-[10px] font-bold text-slate-600 dark:text-slate-300 shadow-sm">{skill}</span>
+                                    ))}
+                                </div>
+                                <div className="space-y-3">
+                                    {(c1.geminiAnalysis?.warnings || c1.analysis?.warnings || []).map((w, i) => (
+                                        <div key={i} className="flex gap-3 p-3 rounded-2xl bg-red-500/5 border border-red-500/10 items-start">
+                                            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                                            <p className="text-[11px] text-red-600/80 dark:text-red-400 font-medium leading-tight">{w}</p>
+                                        </div>
+                                    ))}
+                                    {(c1.geminiAnalysis?.warnings || c1.analysis?.warnings || []).length === 0 && (
+                                        <p className="text-[11px] text-slate-400 italic">No critical gaps identified</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Candidate 2 Data */}
+                            <div className="space-y-16">
+                                <div className="text-sm font-bold text-foreground">
+                                    <span className="text-2xl font-black text-emerald-500 mr-2">{(c2.geminiAnalysis || c2.analysis)?.yearsExperience || 'N/A'}</span>
+                                    <span className="text-muted-foreground uppercase text-[10px] tracking-widest">Years</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(c2.geminiAnalysis?.skills || c2.analysis?.skills || []).slice(0, 10).map(skill => (
+                                        <span key={skill} className="px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-[10px] font-bold text-slate-600 dark:text-slate-300 shadow-sm">{skill}</span>
+                                    ))}
+                                </div>
+                                <div className="space-y-3">
+                                    {(c2.geminiAnalysis?.warnings || c2.analysis?.warnings || []).map((w, i) => (
+                                        <div key={i} className="flex gap-3 p-3 rounded-2xl bg-red-500/5 border border-red-500/10 items-start">
+                                            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                                            <p className="text-[11px] text-red-600/80 dark:text-red-400 font-medium leading-tight">{w}</p>
+                                        </div>
+                                    ))}
+                                    {(c2.geminiAnalysis?.warnings || c2.analysis?.warnings || []).length === 0 && (
+                                        <p className="text-[11px] text-slate-400 italic">No critical gaps identified</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-white/10 text-center text-xs text-muted-foreground bg-white/5">
-                    Comparison powered by AI Analysis Engine
+                <div className="p-4 border-t border-slate-200 dark:border-white/10 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-white dark:bg-slate-900/50">
+                    AI Analysis Engine <span className="mx-2 opacity-20">|</span> Side-by-Side Comparison
                 </div>
             </div>
         </div>
