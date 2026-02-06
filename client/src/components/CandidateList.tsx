@@ -117,6 +117,14 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
         );
     };
 
+    const toggleSelectAll = () => {
+        if (selectedIds.length === candidates.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(candidates.map(c => c._id));
+        }
+    };
+
     const selectedCandidates = candidates.filter(c => selectedIds.includes(c._id));
 
     const getStatusBadge = (status: Resume['processingStatus']) => {
@@ -193,9 +201,28 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between gap-4 mb-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <div className="relative flex items-center justify-center p-1">
+                        <input
+                            type="checkbox"
+                            checked={candidates.length > 0 && selectedIds.length === candidates.length}
+                            onChange={toggleSelectAll}
+                            className="peer absolute h-5 w-5 opacity-0 cursor-pointer z-10"
+                        />
+                        <div className={`h-5 w-5 rounded-lg border-2 transition-all flex items-center justify-center ${candidates.length > 0 && selectedIds.length === candidates.length
+                            ? 'bg-primary border-primary'
+                            : 'border-slate-300 dark:border-slate-700 bg-white/10 dark:bg-slate-900/10'
+                            } ${selectedIds.length > 0 && selectedIds.length < candidates.length ? 'border-primary' : ''}`}>
+                            {selectedIds.length === candidates.length ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+                            ) : selectedIds.length > 0 ? (
+                                <div className="h-2 w-2 rounded-sm bg-primary" />
+                            ) : null}
+                        </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select All</span>
                     {isPolling && (
-                        <div className="flex items-center gap-2 text-[10px] font-black text-primary animate-pulse tracking-widest uppercase">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-primary animate-pulse tracking-widest uppercase ml-2">
                             <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
                             Live Sync
                         </div>
