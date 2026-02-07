@@ -65,4 +65,30 @@ export const resumeService = {
         );
         return response.data.candidates;
     },
+
+    // Update candidate status
+    async updateStatus(id: string, tagStatus: string) {
+        const response = await api.patch<{ success: boolean; candidate: Resume }>(
+            `/resumes/${id}/status`,
+            { tagStatus }
+        );
+        return response.data;
+    },
+
+    // Toggle candidate pin
+    async togglePin(id: string) {
+        const response = await api.patch<{ success: boolean; candidate: Resume }>(
+            `/resumes/${id}/pin`
+        );
+        return response.data;
+    },
+
+    // Bulk update statuses
+    async bulkUpdateStatus(ids: string[], tagStatus: string) {
+        const response = await api.patch<{ success: boolean; message: string }>(
+            '/resumes/bulk-status',
+            { ids, tagStatus }
+        );
+        return response.data;
+    },
 };
