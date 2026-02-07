@@ -268,9 +268,123 @@ const deleteCandidate = async (req, res) => {
         });
     }
 };
+/**
+ * Update candidate status (tag)
+ * PATCH /api/resumes/:id/status
+ */
+const updateStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { tagStatus } = req.body;
+        const userId = req.user.id;
+
+        const validStatuses = ['applied', 'shortlisted', 'interviewed', 'rejected'];
+        if (!validStatuses.includes(tagStatus)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status',
+            });
+        }
+
+        const resume = await Resume.findOneAndUpdate(
+            { _id: id, userId },
+            { tagStatus },
+            { new: true }
+        );
+
+        if (!resume) {
+            return res.status(404).json({
+                success: false,
+                message: 'Candidate not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            candidate: resume,
+        });
+    } catch (error) {
+        console.error('Update status error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating candidate status',
+        });
+    }
+};
+
+/**
+ * Toggle candidate pin
+ * PATCH /api/resumes/:id/pin
+ */
+const togglePin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const resume = await Resume.findOne({ _id: id, userId });
+        if (!resume) {
+            return res.status(404).json({
+                success: false,
+                message: 'Candidate not found',
+            });
+        }
+
+        resume.isPinned = !resume.isPinned;
+        await resume.save();
+
+        res.status(200).json({
+            success: true,
+            candidate: resume,
+        });
+    } catch (error) {
+        console.error('Toggle pin error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error toggling candidate pin',
+        });
+    }
+};
+
+/**
+ * Bulk update candidate status
+ * PATCH /api/resumes/bulk-status
+ */
+const bulkUpdateStatus = async (req, res) => {
+    try {
+        const { ids, tagStatus } = req.body;
+        const userId = req.user.id;
+
+        const validStatuses = ['applied', 'shortlisted', 'interviewed', 'rejected'];
+        if (!validStatuses.includes(tagStatus)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status',
+            });
+        }
+
+        const result = await Resume.updateMany(
+            { _id: { $in: ids }, userId },
+            { tagStatus }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `${result.modifiedCount} candidates updated`,
+        });
+    } catch (error) {
+        console.error('Bulk update status error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating candidates status',
+        });
+    }
+};
 
 module.exports = {
     uploadResume,
     getCandidates,
     deleteCandidate,
+    updateStatus,
+    togglePin,
+    bulkUpdateStatus,
 };
