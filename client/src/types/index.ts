@@ -50,6 +50,8 @@ export type Resume = {
     fileType: 'pdf' | 'docx';
     fileHash?: string;
     isReviewed?: boolean;
+    tagStatus?: 'applied' | 'shortlisted' | 'interviewed' | 'rejected';
+    isPinned?: boolean;
     supabaseFileUrl: string;
     uploadTimestamp: string;
     processingStatus: 'uploaded' | 'processing' | 'completed' | 'error' | 'parsing' | 'scoring' | 'finalizing';
