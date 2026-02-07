@@ -16,7 +16,11 @@ import {
     GraduationCap,
     Lightbulb,
     ShieldAlert,
-    Trash2
+    Pin,
+    PinOff,
+    MoreVertical,
+    Check,
+    Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnalysisStepper } from './AnalysisStepper';
@@ -78,25 +82,6 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
         }
     };
 
-    const handleDeleteCandidate = async (e: React.MouseEvent, id: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!window.confirm('Are you sure you want to delete this candidate?')) {
-            return;
-        }
-
-        try {
-            const response = await api.delete(`/resumes/${id}`);
-            if (response.data.success) {
-                toast.success('Candidate deleted');
-                setCandidates(prev => prev.filter(c => c._id !== id));
-                setSelectedIds(prev => prev.filter(cur => cur !== id));
-            }
-        } catch (error: any) {
-            toast.error('Failed to delete candidate');
-        }
-    };
 
     const handleBulkDelete = async () => {
         if (!window.confirm(`Delete ${selectedIds.length} candidates?`)) return;
@@ -122,6 +107,65 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
             setSelectedIds([]);
         } else {
             setSelectedIds(candidates.map(c => c._id));
+        }
+    };
+
+    const handleTogglePin = async (e: React.MouseEvent, id: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            const data = await resumeService.togglePin(id);
+            if (data.success) {
+                setCandidates(prev => prev.map(c => c._id === id ? { ...c, isPinned: data.candidate.isPinned } : c));
+                toast.success(data.candidate.isPinned ? 'Candidate pinned to top' : 'Candidate unpinned');
+            }
+        } catch (error) {
+            toast.error('Failed to toggle pin');
+        }
+    };
+
+    const handleUpdateStatus = async (id: string, tagStatus: Resume['tagStatus']) => {
+        try {
+            const data = await resumeService.updateStatus(id, tagStatus!);
+            if (data.success) {
+                setCandidates(prev => prev.map(c => c._id === id ? { ...c, tagStatus: data.candidate.tagStatus } : c));
+                toast.success(`Candidate marked as ${tagStatus}`);
+            }
+        } catch (error) {
+            toast.error('Failed to update status');
+        }
+    };
+
+    const handleBulkStatusUpdate = async (tagStatus: string) => {
+        try {
+            const data = await resumeService.bulkUpdateStatus(selectedIds, tagStatus);
+            if (data.success) {
+                setCandidates(prev => prev.map(c => selectedIds.includes(c._id) ? { ...c, tagStatus: tagStatus as any } : c));
+                setSelectedIds([]);
+                toast.success(data.message);
+            }
+        } catch (error) {
+            toast.error('Bulk update failed');
+        }
+    };
+
+    const getScoreColor = (score: number) => {
+        if (score >= 9) return 'text-emerald-500';
+        if (score >= 7) return 'text-blue-500';
+        return 'text-amber-500';
+    };
+
+
+    const getTagBadge = (status?: string) => {
+        switch (status) {
+            case 'shortlisted':
+                return <Badge className="bg-emerald-500 text-white border-none">Shortlisted</Badge>;
+            case 'interviewed':
+                return <Badge className="bg-blue-500 text-white border-none">Interviewed</Badge>;
+            case 'rejected':
+                return <Badge className="bg-rose-500 text-white border-none transition-all duration-300">Rejected</Badge>;
+            default:
+                return null;
         }
     };
 
@@ -195,8 +239,12 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
         );
     }
 
-    // Sort candidates by score descending
-    const sortedCandidates = [...candidates].sort((a, b) => (b.score || 0) - (a.score || 0));
+    // Sort candidates: Pinned first, then by score descending
+    const sortedCandidates = [...candidates].sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return (b.score || 0) - (a.score || 0);
+    });
 
     return (
         <div className="space-y-4">
@@ -235,7 +283,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                             variant="outline"
                             size="sm"
                             onClick={() => exportTopCandidatesToPDF(jobTitle || 'Job Position', company || '', candidates)}
-                            className="h-9 rounded-xl text-[10px] font-bold uppercase tracking-wider border-slate-200 hover:bg-slate-50 gap-2 shadow-sm"
+                            className="h-9 rounded-xl text-[10px] font-bold uppercase tracking-wider border-slate-200 dark:border-slate-800 hover:border-primary/40 hover:bg-primary/10 text-slate-600 dark:text-slate-300 hover:text-primary transition-all duration-300 gap-2 shadow-sm"
                         >
                             <FileDown className="h-4 w-4 text-primary" />
                             Export Top 3
@@ -244,13 +292,32 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                 </div>
 
                 {selectedIds.length > 0 && (
-                    <div className="flex items-center gap-2 animate-fade-in">
-                        <span className="text-xs font-bold text-muted-foreground">{selectedIds.length} Selected</span>
+                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <span className="text-xs font-bold text-muted-foreground mr-2">{selectedIds.length} Selected</span>
+
+                        <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
+                            {[
+                                { label: 'Shortlist', status: 'shortlisted', color: 'text-emerald-600 hover:bg-emerald-500/10' },
+                                { label: 'Interview', status: 'interviewed', color: 'text-blue-600 hover:bg-blue-500/10' },
+                                { label: 'Reject', status: 'rejected', color: 'text-rose-600 hover:bg-rose-500/10' }
+                            ].map(btn => (
+                                <Button
+                                    key={btn.status}
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleBulkStatusUpdate(btn.status)}
+                                    className={`h-7 rounded-xl text-[9px] font-black uppercase tracking-widest ${btn.color}`}
+                                >
+                                    {btn.label}
+                                </Button>
+                            ))}
+                        </div>
+
                         <Button
                             variant="destructive"
                             size="sm"
                             onClick={handleBulkDelete}
-                            className="h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider"
+                            className="h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider px-4"
                         >
                             Delete
                         </Button>
@@ -276,14 +343,23 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
             </div>
 
             <div className="space-y-4">
-                {sortedCandidates.map((candidate) => (
+                {sortedCandidates.map((candidate, index) => (
                     <div
                         key={candidate._id}
-                        className={`group p-6 glass-card relative overflow-hidden ${expandedId === candidate._id
-                            ? 'ring-2 ring-primary/30 shadow-2xl'
-                            : ''
-                            }`}
+                        style={{ animationDelay: `${index * 100}ms` }}
+                        className={`group p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both glass-card relative ${expandedId === candidate._id
+                            ? 'ring-2 ring-primary/30 shadow-2xl scale-[1.01] z-40'
+                            : 'hover:shadow-lg transition-all duration-300 hover:z-30'
+                            } ${candidate.isPinned ? 'border-primary/20 bg-primary/5' : ''}`}
                     >
+                        {candidate.isPinned && (
+                            <div className="absolute top-0 right-0 p-0">
+                                <div className="bg-primary text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-bl-lg rounded-tr-2xl flex items-center gap-1 shadow-sm">
+                                    <Pin className="h-2 w-2 fill-white" />
+                                    Pinned
+                                </div>
+                            </div>
+                        )}
                         <div className="flex items-start gap-4">
                             <div className="pt-1">
                                 <div className="relative flex items-center justify-center">
@@ -315,12 +391,13 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                                         )}
                                     </div>
                                     {candidate.isTopPerformer && (
-                                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-100 text-amber-600 text-[10px] font-black uppercase tracking-tighter shadow-sm border border-amber-200">
-                                            <Star className="h-3 w-3 fill-amber-600" />
-                                            Top Match
+                                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-600 text-[10px] font-black uppercase tracking-tighter shadow-sm border border-emerald-200 animate-pulse">
+                                            <Star className="h-3 w-3 fill-emerald-600" />
+                                            Best Fit
                                         </div>
                                     )}
                                     {getStatusBadge(candidate.processingStatus)}
+                                    {getTagBadge(candidate.tagStatus)}
                                 </div>
 
                                 {candidate.processingStatus !== 'completed' && candidate.processingStatus !== 'error' && (
@@ -329,12 +406,12 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
 
                                 {candidate.processingStatus === 'completed' && candidate.score !== undefined && (
                                     <div className="flex items-center gap-8">
-                                        <div className="text-center">
-                                            <div className="text-4xl font-black text-primary leading-none drop-shadow-sm">
+                                        <div className="text-center group-hover:scale-110 transition-transform duration-500">
+                                            <div className={`text-4xl font-black ${getScoreColor(candidate.score)} leading-none drop-shadow-sm`}>
                                                 {candidate.score}
                                                 <span className="text-sm text-slate-400 font-medium">/10</span>
                                             </div>
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Overall</div>
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">AI Recommendation</div>
                                         </div>
 
                                         <div className="grid grid-cols-3 gap-6 flex-1 max-w-md">
@@ -346,11 +423,11 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                                                 <div key={i} className="space-y-1">
                                                     <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
                                                         <span>{m.label}</span>
-                                                        <span>{m.val ? m.val * 10 : 0}%</span>
+                                                        <span className={m.val && m.val >= 0.8 ? 'text-emerald-500' : ''}>{m.val ? m.val * 10 : 0}%</span>
                                                     </div>
-                                                    <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                    <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                                                         <div
-                                                            className="h-full bg-primary transition-all duration-1000"
+                                                            className={`h-full transition-all duration-1000 ${m.val && m.val >= 0.8 ? 'bg-emerald-500' : 'bg-primary'}`}
                                                             style={{ width: `${(m.val || 0) * 10}%` }}
                                                         />
                                                     </div>
@@ -376,17 +453,47 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={(e) => handleDeleteCandidate(e, candidate._id)}
-                                        className="h-8 w-8 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all border-none"
+                                        onClick={(e) => handleTogglePin(e, candidate._id)}
+                                        className={`h-8 w-8 rounded-xl transition-all duration-300 ${candidate.isPinned ? 'text-primary bg-primary/10' : 'text-slate-400 hover:text-primary hover:bg-primary/5 opacity-0 group-hover:opacity-100'}`}
                                     >
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                        {candidate.isPinned ? <Pin className="h-4 w-4 fill-primary" /> : <PinOff className="h-4 w-4" />}
                                     </Button>
+
+                                    <div className="relative group/tag">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                        >
+                                            <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                        <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 hidden group-hover/tag:block animate-in fade-in zoom-in-95 pointer-events-auto">
+                                            <div className="p-1">
+                                                {[
+                                                    { label: 'Shortlist', status: 'shortlisted', color: 'text-emerald-600 hover:bg-emerald-500/10' },
+                                                    { label: 'Interview', status: 'interviewed', color: 'text-blue-600 hover:bg-blue-500/10' },
+                                                    { label: 'Reject', status: 'rejected', color: 'text-rose-600 hover:bg-rose-500/10' },
+                                                    { label: 'Applied', status: 'applied', color: 'text-slate-400 hover:bg-slate-500/10' }
+                                                ].map(tag => (
+                                                    <button
+                                                        key={tag.status}
+                                                        onClick={() => handleUpdateStatus(candidate._id, tag.status as any)}
+                                                        className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest ${tag.color} flex items-center justify-between group/item`}
+                                                    >
+                                                        {tag.label}
+                                                        {candidate.tagStatus === tag.status && <Check className="h-3 w-3" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {candidate.processingStatus === 'completed' && (candidate.geminiAnalysis || candidate.analysis) && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => setExpandedId(expandedId === candidate._id ? null : candidate._id)}
-                                            className="rounded-xl hover:bg-white dark:hover:bg-slate-800 text-primary font-bold text-xs h-8 border-none"
+                                            className="rounded-xl hover:bg-primary/10 text-primary font-bold text-xs h-8 border-none transition-all duration-300"
                                         >
                                             {expandedId === candidate._id ? (
                                                 <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Hide</>
@@ -400,92 +507,102 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                         </div>
 
                         {expandedId === candidate._id && (candidate.geminiAnalysis || candidate.analysis) && (
-                            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 space-y-6 animate-slide-up">
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <section>
-                                            <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                                                <Zap className="h-3.5 w-3.5 text-primary" />
-                                                Detected Skills
+                            <div className="mt-8 pt-8 border-t border-slate-200/50 dark:border-slate-800/50 space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <div className="grid md:grid-cols-2 gap-8">
+                                    {/* Skills Section */}
+                                    <div className="space-y-6">
+                                        <div className="p-6 rounded-3xl bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm space-y-4 shadow-sm">
+                                            <h4 className="flex items-center gap-3 text-xs font-black text-slate-400 uppercase tracking-widest">
+                                                <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
+                                                    <Zap className="h-4 w-4" />
+                                                </div>
+                                                Extracted Skills
                                             </h4>
-                                            <div className="flex flex-wrap gap-1.5">
+                                            <div className="flex flex-wrap gap-2">
                                                 {(candidate.geminiAnalysis?.skills || candidate.analysis?.skills || []).map((skill, idx) => (
                                                     <span
                                                         key={idx}
-                                                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-medium"
+                                                        className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold shadow-sm border border-slate-200 dark:border-slate-700 hover:scale-105 transition-transform"
                                                     >
                                                         {skill}
                                                     </span>
                                                 ))}
                                             </div>
-                                        </section>
+                                        </div>
 
-                                        <section>
-                                            <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                                                <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                                                Experience & Education
-                                            </h4>
-                                            <div className="space-y-2">
-                                                <div className="p-3 rounded-2xl bg-white/40 dark:bg-slate-800/50 text-sm border border-white/20">
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <span className="text-slate-500">Years of Exp:</span>
-                                                        <span className="font-bold capitalize">
-                                                            {candidate.geminiAnalysis?.yearsExperience || candidate.analysis?.yearsExperience || 'N/A'}
-                                                        </span>
-                                                    </div>
-                                                    {(candidate.geminiAnalysis?.education || candidate.analysis?.education || []).slice(0, 1).map((edu, idx) => (
-                                                        <div key={idx} className="border-t border-slate-200 dark:border-slate-700 mt-2 pt-2 truncate text-slate-600 dark:text-slate-400">
-                                                            {edu.degree} @ {edu.institution}
-                                                        </div>
-                                                    ))}
+                                        <div className="p-6 rounded-3xl bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm space-y-4 shadow-sm">
+                                            <h4 className="flex items-center gap-3 text-xs font-black text-slate-400 uppercase tracking-widest">
+                                                <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-500">
+                                                    <GraduationCap className="h-4 w-4" />
                                                 </div>
+                                                Background
+                                            </h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Experience</p>
+                                                    <p className="text-sm font-black text-slate-900 dark:text-white capitalize">
+                                                        {candidate.geminiAnalysis?.yearsExperience || candidate.analysis?.yearsExperience || 'N/A'}
+                                                    </p>
+                                                </div>
+                                                {(candidate.geminiAnalysis?.education || candidate.analysis?.education || []).slice(0, 1).map((edu, idx) => (
+                                                    <div key={idx} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Education</p>
+                                                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                            {edu.degree}
+                                                        </p>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </section>
+                                        </div>
                                     </div>
 
+                                    {/* Insights Section */}
                                     <div className="space-y-6">
-                                        <section>
-                                            <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                                                <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+                                        <div className="p-6 rounded-3xl bg-white/40 dark:bg-slate-800/40 border border-slate-200/50 dark:border-white/5 backdrop-blur-md space-y-3 shadow-lg relative overflow-hidden group/just">
+                                            <div className="absolute -right-4 -top-4 p-4 rounded-full bg-blue-500/5 group-hover/just:scale-110 transition-transform">
+                                                <Lightbulb className="h-12 w-12 text-blue-500/20" />
+                                            </div>
+                                            <h4 className="flex items-center gap-3 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
                                                 Fit Justification
                                             </h4>
-                                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic bg-white/40 dark:bg-slate-800/40 p-4 rounded-2xl border border-white/20">
+                                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic font-medium relative z-10">
                                                 "{candidate.geminiAnalysis?.justification || candidate.analysis?.justification || 'No justification provided'}"
                                             </p>
-                                        </section>
-
-                                        {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).length > 0 && (
-                                            <section className="p-4 rounded-2xl border border-primary/20 bg-primary/5">
-                                                <h4 className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider mb-3">
-                                                    <Star className="h-3.5 w-3.5" />
-                                                    Suggested Interview Questions
-                                                </h4>
-                                                <ul className="space-y-2">
-                                                    {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).map((q, idx) => (
-                                                        <li key={idx} className="text-xs flex gap-2">
-                                                            <span className="font-bold text-primary">{idx + 1}.</span>
-                                                            <span className="text-foreground/80">{q}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </section>
-                                        )}
+                                        </div>
 
                                         {((candidate.geminiAnalysis?.warnings?.length || 0) > 0 || (candidate.analysis?.warnings?.length || 0) > 0) && (
-                                            <section>
-                                                <h4 className="flex items-center gap-2 text-xs font-bold text-red-500 uppercase tracking-wider mb-2">
-                                                    <ShieldAlert className="h-3.5 w-3.5" />
+                                            <div className="p-6 rounded-3xl bg-red-500/5 border border-red-500/10 space-y-4">
+                                                <h4 className="flex items-center gap-3 text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-widest">
+                                                    <ShieldAlert className="h-4 w-4" />
                                                     Critical Gaps
                                                 </h4>
-                                                <ul className="space-y-1">
+                                                <ul className="space-y-2">
                                                     {(candidate.geminiAnalysis?.warnings || candidate.analysis?.warnings || []).map((warning, idx) => (
-                                                        <li key={idx} className="flex items-start gap-2 text-xs text-red-600 dark:text-red-400">
-                                                            <span className="mt-1.5 h-1 w-1 rounded-full bg-red-400 shrink-0" />
+                                                        <li key={idx} className="flex items-start gap-3 text-xs text-red-700 dark:text-red-400 font-medium">
+                                                            <div className="mt-1 h-1 w-1 rounded-full bg-red-500 shrink-0" />
                                                             {warning}
                                                         </li>
                                                     ))}
                                                 </ul>
-                                            </section>
+                                            </div>
+                                        )}
+
+                                        {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).length > 0 && (
+                                            <div className="p-6 rounded-3xl bg-blue-600 shadow-xl shadow-blue-500/20 text-white space-y-4 overflow-hidden relative">
+                                                <Sparkles className="absolute -right-6 -top-6 h-24 w-24 text-white/10" />
+                                                <h4 className="flex items-center gap-3 text-xs font-black uppercase tracking-widest relative z-10">
+                                                    <Star className="h-4 w-4 fill-white" />
+                                                    Suggested Questions
+                                                </h4>
+                                                <ul className="space-y-3 relative z-10">
+                                                    {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).slice(0, 3).map((q, idx) => (
+                                                        <li key={idx} className="text-xs flex gap-3 leading-relaxed bg-white/10 p-3 rounded-2xl border border-white/10">
+                                                            <span className="font-black text-blue-200">{idx + 1}</span>
+                                                            <span className="font-bold">{q}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
