@@ -42,6 +42,15 @@ const resumeSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        tagStatus: {
+            type: String,
+            enum: ['applied', 'shortlisted', 'interviewed', 'rejected'],
+            default: 'applied',
+        },
+        isPinned: {
+            type: Boolean,
+            default: false,
+        },
         uploadTimestamp: {
             type: Date,
             default: Date.now,
