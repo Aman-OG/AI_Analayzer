@@ -91,4 +91,13 @@ export const resumeService = {
         );
         return response.data;
     },
+
+    // Generate AI Interview Guide
+    async generateInterviewGuide(jobId: string, candidateIds: string[]) {
+        const response = await api.post<{ success: boolean; guide: string }>(
+            '/resumes/interview-guide',
+            { jobId, candidateIds }
+        );
+        return response.data;
+    },
 };
