@@ -33,7 +33,7 @@ Your goal is to extract specific information, evaluate the candidate's fit, and 
 **IMPORTANT INSTRUCTIONS:**
 1. RESPOND ONLY IN VALID JSON FORMAT. Do not include any text outside the JSON structure.
 2. EXPLICITLY EXCLUDE ALL OTHER PERSONALLY IDENTIFIABLE INFORMATION (PII) EXCEPT THE NAME. This includes: email, phone, address, social media, photos. Use placeholders like "[REDACTED FOR PII]" for these other fields.
-3. EXTRACT THE CANDIDATE'S FULL NAME from the resume. If not found, use null.
+3. EXTRACT THE CANDIDATE'S FULL NAME from the resume header (usually the largest text at the top). If not found, use null. DO NOT use the filename or placeholders.
 4. VALIDATE THE DOCUMENT: Determine if this document is actually a resume, CV, or professional profile. If it is school material, a textbook chapter, student notes, or anything else that is not a job application document, set "isResume" to false.
 5. The 'fitScore' should be an integer between 1 (very poor fit) and 10 (excellent fit).
 6. 'yearsExperience' should be estimated years of relevant experience (number, range like '3-5', or '10+').

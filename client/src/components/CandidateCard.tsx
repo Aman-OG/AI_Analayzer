@@ -131,12 +131,12 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                                     <div key={i} className="space-y-1">
                                         <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
                                             <span>{m.label}</span>
-                                            <span className={m.val && m.val >= 0.8 ? 'text-emerald-500' : ''}>{m.val ? Math.round(m.val * 100) : 0}%</span>
+                                            <span className={m.val && m.val >= 8 ? 'text-emerald-500' : ''}>{m.val ? Math.round(m.val * 10) : 0}%</span>
                                         </div>
                                         <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                                             <div
-                                                className={`h-full transition-all duration-1000 ${m.val && m.val >= 0.8 ? 'bg-emerald-500' : 'bg-primary'}`}
-                                                style={{ width: `${(m.val || 0) * 100}%` }}
+                                                className={`h-full transition-all duration-1000 ${m.val && m.val >= 8 ? 'bg-emerald-500' : 'bg-primary'}`}
+                                                style={{ width: `${(m.val || 0) * 10}%` }}
                                             />
                                         </div>
                                     </div>
