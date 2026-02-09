@@ -50,7 +50,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
         if (!selectedIds.length || !window.confirm(`Are you sure you want to delete ${selectedIds.length} candidate(s)?`)) return;
 
         try {
-            await api.delete('/api/resumes/bulk', { data: { ids: selectedIds } });
+            await api.delete('/resumes/bulk', { data: { ids: selectedIds } });
             toast.success('Candidates deleted successfully');
             setSelectedIds([]);
             loadCandidates();

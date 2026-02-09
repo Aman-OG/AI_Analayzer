@@ -25,17 +25,19 @@ Your goal is to extract specific information, evaluate the candidate's fit, and 
 
 **IMPORTANT INSTRUCTIONS:**
 1. RESPOND ONLY IN VALID JSON FORMAT. Do not include any text outside the JSON structure.
-2. EXPLICITLY EXCLUDE ALL PERSONALLY IDENTIFIABLE INFORMATION (PII). This includes: name, email, phone, address, social media, photos. Use placeholders like "[REDACTED FOR PII]" if needed.
-3. The 'fitScore' should be an integer between 1 (very poor fit) and 10 (excellent fit).
-4. 'yearsExperience' should be estimated years of relevant experience (number, range like '3-5', or '10+').
-5. 'skills' should list skills relevant to the job description found in the resume.
-6. 'education' should list qualifications with anonymized institutions.
-7. 'justification' should explain the fitScore, highlighting strengths/weaknesses.
-8. Differentiate between keyword stuffing vs genuine experience depth.
-9. Include 'warnings' array for missing critical skills or ambiguities.
+2. EXPLICITLY EXCLUDE ALL PERSONALLY IDENTIFIABLE INFORMATION (PII) EXCEPT THE NAME. This includes: email, phone, address, social media, photos. Use placeholders like "[REDACTED FOR PII]" if needed.
+3. EXTRACT THE CANDIDATE'S FULL NAME from the resume. If not found, use null.
+4. The 'fitScore' should be an integer between 1 (very poor fit) and 10 (excellent fit).
+5. 'yearsExperience' should be estimated years of relevant experience (number, range like '3-5', or '10+').
+6. 'skills' should list skills relevant to the job description found in the resume.
+7. 'education' should list qualifications with anonymized institutions.
+8. 'justification' should explain the fitScore, highlighting strengths/weaknesses.
+9. Differentiate between keyword stuffing vs genuine experience depth.
+10. Include 'warnings' array for missing critical skills or ambiguities.
 
 **JSON OUTPUT STRUCTURE:**
 {
+  "candidateName": "string or null",
   "skills": ["string"],
   "yearsExperience": "number or string",
   "education": [
@@ -70,6 +72,9 @@ ${resumeText}
  */
 const analyzeWithGemini = async (prompt) => {
     try {
+        if (!model) {
+            throw new Error('Gemini API key is not configured');
+        }
         const result = await model.generateContent(prompt);
         const response = await result.response;
         let text = response.text();
@@ -190,6 +195,7 @@ const triggerGeminiAnalysis = async (resumeId) => {
                 justification: sanitizedAnalysis.justification,
                 warnings: sanitizedAnalysis.warnings || [],
             };
+            resume.candidateName = sanitizedAnalysis.candidateName || null;
             resume.score = sanitizedAnalysis.fitScore;
             resume.processingStatus = 'completed';
             resume.errorDetails = null;
@@ -229,6 +235,9 @@ const triggerGeminiAnalysis = async (resumeId) => {
  */
 const generateInterviewGuide = async (job, candidates) => {
     try {
+        if (!model) {
+            throw new Error('Gemini API key is not configured');
+        }
         const candidateSummaries = candidates.map((c, i) => {
             const analysis = c.geminiAnalysis || c.analysis;
             return `
