@@ -11,9 +11,6 @@ const resumeRoutes = require('./routes/resumeRoutes');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Connect to MongoDB
-connectDB();
-
 // Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
 console.log('✅ Allowed Origins:', allowedOrigins);
@@ -75,9 +72,45 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`\n🚀 Server running on port ${PORT}`);
-    console.log(`📍 Health check: http://localhost:${PORT}/health`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+// Function to start server with port retry
+const startServer = (port) => {
+    const server = app.listen(port, () => {
+        console.log(`\n🚀 Server running on port ${port}`);
+        console.log(`📍 Health check: http://localhost:${port}/health`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+    });
+
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`⚠️ Port ${port} is in use, trying ${port + 1}...`);
+            startServer(port + 1);
+        } else {
+            console.error('❌ Server error:', err);
+        }
+    });
+
+    // Graceful shutdown
+    const shutDown = () => {
+        console.log('\n🛑 Received kill signal, shutting down gracefully...');
+        server.close(() => {
+            console.log('✅ Closed out remaining connections');
+            process.exit(0);
+        });
+
+        setTimeout(() => {
+            console.error('❌ Could not close connections in time, forcefully shutting down');
+            process.exit(1);
+        }, 10000);
+    };
+
+    process.on('SIGTERM', shutDown);
+    process.on('SIGINT', shutDown);
+};
+
+// Connect to MongoDB and start server
+connectDB().then(() => {
+    startServer(PORT);
+}).catch(err => {
+    console.error('❌ Failed to connect to database. Server shutting down...');
+    process.exit(1);
 });
