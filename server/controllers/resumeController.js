@@ -3,6 +3,7 @@ const JobDescription = require('../models/JobDescriptionModel');
 const supabase = require('../config/supabaseClient');
 const { parseResume } = require('../utils/resumeParser');
 const { triggerGroqAnalysis } = require('../services/groqService');
+const { generateInterviewGuide: generateAIGuide } = require('../services/geminiService');
 const crypto = require('crypto');
 
 /**
@@ -380,6 +381,61 @@ const bulkUpdateStatus = async (req, res) => {
     }
 };
 
+/**
+ * Generate AI Interview Guide for top candidates
+ * POST /api/resumes/interview-guide
+ */
+const generateInterviewGuide = async (req, res) => {
+    try {
+        const { jobId, candidateIds } = req.body;
+        const userId = req.user.id;
+
+        if (!jobId || !candidateIds || !Array.isArray(candidateIds)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Job ID and candidate IDs are required',
+            });
+        }
+
+        // Verify job belongs to user
+        const job = await JobDescription.findOne({ _id: jobId, userId });
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found',
+            });
+        }
+
+        // Get candidates and verify they belong to user and job
+        const candidates = await Resume.find({
+            _id: { $in: candidateIds },
+            jobId,
+            userId
+        });
+
+        if (candidates.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No matching candidates found',
+            });
+        }
+
+        // Generate guide using Gemini
+        const guide = await generateAIGuide(job, candidates);
+
+        res.status(200).json({
+            success: true,
+            guide
+        });
+    } catch (error) {
+        console.error('Generate interview guide error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error generating interview guide',
+        });
+    }
+};
+
 module.exports = {
     uploadResume,
     getCandidates,
@@ -387,4 +443,5 @@ module.exports = {
     updateStatus,
     togglePin,
     bulkUpdateStatus,
+    generateInterviewGuide,
 };

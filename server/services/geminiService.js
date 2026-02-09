@@ -221,9 +221,62 @@ const triggerGeminiAnalysis = async (resumeId) => {
     });
 };
 
+/**
+ * Generate a comprehensive interview guide for the top candidates
+ * @param {Object} job - Job description object
+ * @param {Array<Object>} candidates - List of candidate objects
+ * @returns {Promise<string>} Markdown formatted interview guide
+ */
+const generateInterviewGuide = async (job, candidates) => {
+    try {
+        const candidateSummaries = candidates.map((c, i) => {
+            const analysis = c.geminiAnalysis || c.analysis;
+            return `
+CANDIDATE ${i + 1}: ${c.candidateName || c.originalFilename}
+FIT SCORE: ${c.score}/10
+STRENGTHS: ${analysis.justification}
+GAPS/WARNINGS: ${analysis.warnings.join(', ') || 'None'}
+SKILLS: ${analysis.skills.join(', ')}
+`;
+        }).join('\n---\n');
+
+        const prompt = `You are an expert technical recruiter and hiring manager.
+Generate a structured, professional Interview Guide for the following position based on the top candidate's profiles.
+
+JOB TITLE: ${job.title}
+COMPANY: ${job.company || 'Internal'}
+JOB DESCRIPTION SUMMARY:
+${job.descriptionText.substring(0, 500)}...
+
+TOP CANDIDATES DATA:
+${candidateSummaries}
+
+---
+INSTRUCTIONS:
+1. Provide a 'General Interview Strategy' for this specific role.
+2. For EACH candidate, provide:
+   - 3-4 Targeted Interview Questions specifically designed to probe their 'Gaps/Warnings' or verify high-impact skills.
+   - What to look for in their answers (ideal response patterns).
+   - A 'Deep Dive' technical topic unique to their background.
+3. Include a 'Comparative Analysis' section at the end to help the interviewer choose between them.
+4. Format the entire response in clean Markdown.
+5. DO NOT include PII. Use the candidate names as provided.
+
+Respond ONLY with the Markdown content.`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        console.error('Gemini Interview Guide error:', error.message);
+        throw error;
+    }
+};
+
 module.exports = {
     constructPrompt,
     analyzeWithGemini,
     scanForPII,
     triggerGeminiAnalysis,
+    generateInterviewGuide,
 };

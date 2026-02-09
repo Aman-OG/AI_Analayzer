@@ -1,5 +1,13 @@
 const express = require('express');
-const { uploadResume, getCandidates, deleteCandidate, updateStatus, togglePin, bulkUpdateStatus } = require('../controllers/resumeController');
+const {
+    uploadResume,
+    getCandidates,
+    deleteCandidate,
+    updateStatus,
+    togglePin,
+    bulkUpdateStatus,
+    generateInterviewGuide
+} = require('../controllers/resumeController');
 const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
@@ -13,6 +21,9 @@ router.post('/upload', upload.single('resume'), uploadResume);
 
 // GET /api/resumes/candidates/:jobId - Get all candidates for a job
 router.get('/candidates/:jobId', getCandidates);
+
+// POST /api/resumes/interview-guide - Generate AI Interview Guide
+router.post('/interview-guide', generateInterviewGuide);
 
 // DELETE /api/resumes/:id - Delete a candidate's resume
 router.delete('/:id', deleteCandidate);
