@@ -436,6 +436,38 @@ const generateInterviewGuide = async (req, res) => {
     }
 };
 
+/**
+ * Bulk delete candidates
+ * DELETE /api/resumes/bulk
+ */
+const bulkDeleteCandidates = async (req, res) => {
+    try {
+        const { ids } = req.body;
+        const userId = req.user.id;
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No candidate IDs provided',
+            });
+        }
+
+        const result = await Resume.deleteMany({ _id: { $in: ids }, userId });
+
+        res.status(200).json({
+            success: true,
+            message: `${result.deletedCount} candidates deleted successfully`,
+        });
+
+    } catch (error) {
+        console.error('Bulk delete error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting candidates',
+        });
+    }
+};
+
 module.exports = {
     uploadResume,
     getCandidates,
@@ -444,4 +476,5 @@ module.exports = {
     togglePin,
     bulkUpdateStatus,
     generateInterviewGuide,
+    bulkDeleteCandidates,
 };

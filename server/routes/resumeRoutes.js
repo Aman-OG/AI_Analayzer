@@ -6,7 +6,8 @@ const {
     updateStatus,
     togglePin,
     bulkUpdateStatus,
-    generateInterviewGuide
+    generateInterviewGuide,
+    bulkDeleteCandidates
 } = require('../controllers/resumeController');
 const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
@@ -24,6 +25,9 @@ router.get('/candidates/:jobId', getCandidates);
 
 // POST /api/resumes/interview-guide - Generate AI Interview Guide
 router.post('/interview-guide', generateInterviewGuide);
+
+// DELETE /api/resumes/bulk - Bulk delete candidates (MUST BE BEFORE /:id)
+router.delete('/bulk', bulkDeleteCandidates);
 
 // DELETE /api/resumes/:id - Delete a candidate's resume
 router.delete('/:id', deleteCandidate);
