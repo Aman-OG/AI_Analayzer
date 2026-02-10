@@ -16,13 +16,10 @@ import {
     Clock,
     FileText,
     Zap,
-    AlertCircle,
-    Sparkles,
-    Loader2
+    AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CompareCandidatesModal } from './CompareCandidatesModal';
-import { InterviewGuideModal } from './InterviewGuideModal';
 import { CandidateCardSkeleton } from './ui/CandidateCardSkeleton';
 import { exportTopCandidatesToPDF } from '../lib/exportToPDF';
 import { useResumePolling } from '../hooks/useResumePolling';
@@ -41,10 +38,8 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | Resume['tagStatus']>('all');
+    const [viewMode, setViewMode] = useState<'rich' | 'compact'>('rich');
     const [showCompareModal, setShowCompareModal] = useState(false);
-    const [showGuideModal, setShowGuideModal] = useState(false);
-    const [guideContent, setGuideContent] = useState<string | null>(null);
-    const [isGeneratingGuide, setIsGeneratingGuide] = useState(false);
 
     const handleBulkDelete = async () => {
         if (!selectedIds.length || !window.confirm(`Are you sure you want to delete ${selectedIds.length} candidate(s)?`)) return;
@@ -110,30 +105,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
         }
     };
 
-    const handleGenerateGuide = async () => {
-        const topCandidates = candidates
-            .filter(c => c.processingStatus === 'completed')
-            .sort((a, b) => (b.score || 0) - (a.score || 0))
-            .slice(0, 3);
 
-        if (topCandidates.length === 0) {
-            toast.error('No candidates available for analysis');
-            return;
-        }
-
-        setIsGeneratingGuide(true);
-        try {
-            const data = await resumeService.generateInterviewGuide(jobId, topCandidates.map(c => c._id));
-            if (data.success) {
-                setGuideContent(data.guide);
-                setShowGuideModal(true);
-            }
-        } catch (error) {
-            toast.error('Failed to generate interview guide');
-        } finally {
-            setIsGeneratingGuide(false);
-        }
-    };
 
     const getScoreColor = (score: number) => {
         if (score >= 9) return 'text-emerald-500';
@@ -253,19 +225,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={handleGenerateGuide}
-                            disabled={isGeneratingGuide || candidates.filter(c => c.processingStatus === 'completed').length === 0}
-                            className="h-11 px-6 rounded-2xl border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary transition-all duration-300 shadow-sm"
-                        >
-                            {isGeneratingGuide ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                                <Sparkles className="h-4 w-4 mr-2" />
-                            )}
-                            <span className="font-bold">AI Interview Guide</span>
-                        </Button>
+
                         <Button
                             variant="outline"
                             onClick={() => exportTopCandidatesToPDF(jobTitle || 'Unknown', company || 'Internal', candidates)}
@@ -409,32 +369,46 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                             <LayoutGrid className="h-3 w-3" />
-                            View Mode: <span className="text-primary cursor-pointer hover:underline">Rich Details</span>
+                            View Mode:
+                            <button
+                                onClick={() => setViewMode(viewMode === 'rich' ? 'compact' : 'rich')}
+                                className="text-primary hover:underline transition-all"
+                            >
+                                {viewMode === 'rich' ? 'Rich Details' : 'Compact List'}
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className="grid gap-4">
-                {filteredCandidates.map((candidate, index) => (
-                    <CandidateCard
-                        key={candidate._id}
-                        candidate={candidate}
-                        index={index}
-                        isSelected={selectedIds.includes(candidate._id)}
-                        isExpanded={expandedId === candidate._id}
-                        onToggleExpand={() => setExpandedId(expandedId === candidate._id ? null : candidate._id)}
-                        onToggleSelect={() => toggleSelect(candidate._id)}
-                        onTogglePin={(e) => handleTogglePin(e, candidate._id)}
-                        onUpdateStatus={(status) => handleUpdateStatus(candidate._id, status)}
-                        getScoreColor={getScoreColor}
-                        getStatusBadge={getStatusBadge}
-                        getTagBadge={getTagBadge}
-                        jobTitle={jobTitle}
-                        company={company}
-                    />
-                ))}
-            </div>
+            {filteredCandidates.length === 0 ? (
+                <div className="text-center py-10 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 animate-in fade-in slide-in-from-top-4">
+                    <Search className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-slate-500">No candidates match your search.</p>
+                </div>
+            ) : (
+                <div className={`grid gap-4 ${viewMode === 'compact' ? 'md:grid-cols-2 lg:grid-cols-1' : ''}`}>
+                    {filteredCandidates.map((candidate, index) => (
+                        <CandidateCard
+                            key={candidate._id}
+                            candidate={candidate}
+                            index={index}
+                            isCompact={viewMode === 'compact'}
+                            isSelected={selectedIds.includes(candidate._id)}
+                            isExpanded={expandedId === candidate._id}
+                            onToggleExpand={() => setExpandedId(expandedId === candidate._id ? null : candidate._id)}
+                            onToggleSelect={() => toggleSelect(candidate._id)}
+                            onTogglePin={(e) => handleTogglePin(e, candidate._id)}
+                            onUpdateStatus={(status) => handleUpdateStatus(candidate._id, status)}
+                            getScoreColor={getScoreColor}
+                            getStatusBadge={getStatusBadge}
+                            getTagBadge={getTagBadge}
+                            jobTitle={jobTitle}
+                            company={company}
+                        />
+                    ))}
+                </div>
+            )}
 
             {isPolling && (
                 <div className="fixed bottom-8 right-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -452,14 +426,6 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                 <CompareCandidatesModal
                     candidates={selectedCandidates}
                     onClose={() => setShowCompareModal(false)}
-                />
-            )}
-
-            {showGuideModal && guideContent && (
-                <InterviewGuideModal
-                    guide={guideContent}
-                    jobTitle={jobTitle || 'Unknown Position'}
-                    onClose={() => setShowGuideModal(false)}
                 />
             )}
         </div>
