@@ -38,7 +38,7 @@ Your goal is to extract specific information, evaluate the candidate's fit, and 
 5. The 'fitScore' should be an integer between 1 (very poor fit) and 10 (excellent fit).
 6. 'yearsExperience' should be estimated years of relevant experience (number, range like '3-5', or '10+').
 7. 'skills' should list skills relevant to the job description found in the resume.
-8. 'education' should list qualifications with anonymized institutions.
+8. 'education' should list qualifications with the actual institution name.
 9. 'justification' should explain the fitScore, highlighting strengths/weaknesses.
 10. Differentiate between keyword stuffing vs genuine experience depth.
 11. Include 'warnings' array for missing critical skills or ambiguities.
@@ -52,7 +52,7 @@ Your goal is to extract specific information, evaluate the candidate's fit, and 
   "education": [
     {
       "degree": "string",
-      "institution": "string (anonymized)",
+      "institution": "string",
       "graduationYear": "string or null"
     }
   ],
