@@ -194,10 +194,23 @@ export function JobDetailsPage() {
                                 </div>
                             </section>
                         )}
+
+                        {job.focusAreas?.length > 0 && (
+                            <section className="space-y-3">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Focus Areas</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {job.focusAreas.map((area: string, idx: number) => (
+                                        <span key={idx} className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest">
+                                            {area}
+                                        </span>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
                     </div>
 
                     {/* Quick Upload Action */}
-                    <div className="p-8 rounded-3xl bg-blue-600 shadow-xl shadow-blue-500/20 text-white space-y-6 relative overflow-hidden group">
+                    <div className="p-8 rounded-3xl bg-slate-900 dark:bg-slate-900 border border-slate-800 shadow-2xl text-white space-y-6 relative overflow-hidden group">
                         <Sparkles className="absolute -right-4 -top-4 h-24 w-24 text-white/10 group-hover:scale-110 transition-transform" />
 
                         <div className="relative z-10">
@@ -210,13 +223,13 @@ export function JobDetailsPage() {
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
                                     className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 ${isDragging
-                                        ? 'bg-blue-500 border-white shadow-inner scale-[0.98]'
-                                        : 'border-blue-400/50 hover:bg-blue-500/10'
+                                        ? 'bg-primary/20 border-primary shadow-inner scale-[0.98]'
+                                        : 'border-slate-700 hover:bg-white/5'
                                         }`}
                                 >
                                     <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
-                                        <div className={`p-3 rounded-2xl bg-white/10 mb-3 transition-transform ${isDragging ? 'scale-110' : ''}`}>
-                                            <Upload className={`w-8 h-8 ${isDragging ? 'text-white' : 'text-blue-100'}`} />
+                                        <div className={`p-3 rounded-2xl bg-white/5 mb-3 transition-transform ${isDragging ? 'scale-110' : ''}`}>
+                                            <Upload className={`w-8 h-8 ${isDragging ? 'text-primary' : 'text-slate-400'}`} />
                                         </div>
                                         {selectedFiles.length > 0 ? (
                                             <div className="space-y-1">
@@ -227,10 +240,10 @@ export function JobDetailsPage() {
                                             </div>
                                         ) : (
                                             <div className="space-y-1">
-                                                <p className="text-sm font-bold text-blue-50">
+                                                <p className="text-sm font-bold text-slate-200">
                                                     {isDragging ? 'Drop them here!' : 'Click or Drop Resumes'}
                                                 </p>
-                                                <p className="text-[10px] text-blue-200 uppercase font-black tracking-widest">PDF or DOCX</p>
+                                                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">PDF or DOCX</p>
                                             </div>
                                         )}
                                     </div>
@@ -267,7 +280,7 @@ export function JobDetailsPage() {
                                 )}
 
                                 <Button
-                                    className="w-full h-14 rounded-2xl bg-white text-blue-600 hover:bg-blue-50 font-black text-base shadow-lg transition-transform hover:-translate-y-1"
+                                    className="w-full h-14 rounded-2xl bg-primary text-white hover:bg-primary/90 font-black text-base shadow-lg transition-transform hover:-translate-y-1"
                                     onClick={handleUpload}
                                     disabled={selectedFiles.length === 0 || uploading}
                                 >

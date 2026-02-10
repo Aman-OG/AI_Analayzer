@@ -39,7 +39,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans selection:bg-blue-100 selection:text-blue-700">
             {/* Glassmorphic Navbar */}
-            <nav className="sticky top-0 z-40 w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 supports-[backdrop-filter]:bg-white/60">
+            <nav className="sticky top-0 z-[100] w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 supports-[backdrop-filter]:bg-white/60">
                 <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-10">
                         <Link to={user ? "/jobs" : "/"} className="flex items-center gap-3 group">
@@ -81,7 +81,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                 </Button>
 
                                 {isProfileOpen && (
-                                    <div className="absolute right-0 mt-3 w-64 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-2xl shadow-slate-200/50 dark:shadow-none animate-in fade-in zoom-in-95 duration-200 z-20">
+                                    <div className="absolute right-0 mt-3 w-64 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-2xl shadow-slate-200/50 dark:shadow-none animate-in fade-in zoom-in-95 duration-200 z-50">
                                         <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 mb-2">
                                             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
                                             <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.email}</p>
