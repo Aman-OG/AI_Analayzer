@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Resume } from '../types';
 import { Button } from './ui/button';
 import { exportSingleCandidateToPDF } from '../lib/exportToPDF';
@@ -17,7 +17,6 @@ import {
     PinOff,
     MoreVertical,
     Check,
-    Sparkles,
     FileDown
 } from 'lucide-react';
 import { AnalysisStepper } from './AnalysisStepper';
@@ -36,6 +35,7 @@ interface CandidateCardProps {
     getScoreColor: (score: number) => string;
     jobTitle?: string;
     company?: string;
+    isCompact?: boolean;
 }
 
 export const CandidateCard: React.FC<CandidateCardProps> = ({
@@ -51,14 +51,40 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
     getTagBadge,
     getScoreColor,
     jobTitle = 'Unknown',
-    company = 'Internal'
+    company = 'Internal',
+    isCompact = false
 }) => {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        if (isMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isMenuOpen]);
+
+    const handleUpdateStatus = (status: Resume['tagStatus']) => {
+        onUpdateStatus(status);
+        setIsMenuOpen(false);
+    };
     return (
         <div
             style={{ animationDelay: `${index * 100}ms` }}
-            className={`group p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both glass-card relative ${isExpanded
+            className={`group animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both glass-card relative ${isExpanded || !isCompact ? 'p-6' : 'p-3 hover:shadow-md'} ${isExpanded
                 ? 'ring-2 ring-primary/30 shadow-2xl scale-[1.01] z-40'
-                : 'hover:shadow-lg transition-all duration-300 hover:z-30'
+                : 'transition-all duration-300 hover:z-30'
                 } ${candidate.isPinned ? 'border-primary/20 bg-primary/5' : ''}`}
         >
             {candidate.isPinned && (
@@ -112,7 +138,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                         <AnalysisStepper status={candidate.processingStatus} />
                     )}
 
-                    {candidate.processingStatus === 'completed' && candidate.score !== undefined && (
+                    {candidate.processingStatus === 'completed' && candidate.score !== undefined && !isCompact && (
                         <div className="flex items-center gap-8">
                             <div className="text-center group-hover:scale-110 transition-transform duration-500">
                                 <div className={`text-4xl font-black ${getScoreColor(candidate.score)} leading-none drop-shadow-sm`}>
@@ -145,6 +171,21 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                         </div>
                     )}
 
+                    {candidate.processingStatus === 'completed' && candidate.score !== undefined && isCompact && (
+                        <div className="flex items-center gap-3">
+                            <div className={`text-xl font-black ${getScoreColor(candidate.score)}`}>
+                                {candidate.score}
+                                <span className="text-[10px] text-slate-400 font-medium tracking-tight">/10</span>
+                            </div>
+                            <div className="h-1 w-20 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full ${getScoreColor(candidate.score).replace('text-', 'bg-')}`}
+                                    style={{ width: `${candidate.score * 10}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {candidate.processingStatus === 'error' && candidate.errorDetails && (
                         <div className="flex items-start gap-2 p-3 rounded-2xl bg-red-50 dark:bg-red-950/20 text-xs text-red-600 dark:text-red-400 mt-2">
                             <AlertCircle className="h-4 w-4 flex-shrink-0" />
@@ -167,33 +208,42 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                             {candidate.isPinned ? <Pin className="h-4 w-4 fill-primary" /> : <PinOff className="h-4 w-4" />}
                         </Button>
 
-                        <div className="relative group/tag">
+                        <div className="relative" ref={menuRef}>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsMenuOpen(!isMenuOpen);
+                                }}
+                                className={`h-8 w-8 p-0 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-500/10 transition-all duration-200 ${isMenuOpen ? 'text-blue-600 bg-blue-500/10 opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                             >
                                 <MoreVertical className="h-4 w-4" />
                             </Button>
-                            <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 hidden group-hover/tag:block animate-in fade-in zoom-in-95 pointer-events-auto">
-                                <div className="p-1">
-                                    {[
-                                        { label: 'Shortlist', status: 'shortlisted', color: 'text-emerald-600 hover:bg-emerald-500/10' },
-                                        { label: 'Interview', status: 'interviewed', color: 'text-blue-600 hover:bg-blue-500/10' },
-                                        { label: 'Reject', status: 'rejected', color: 'text-rose-600 hover:bg-rose-500/10' },
-                                        { label: 'Applied', status: 'applied', color: 'text-slate-400 hover:bg-slate-500/10' }
-                                    ].map(tag => (
-                                        <button
-                                            key={tag.status}
-                                            onClick={() => onUpdateStatus(tag.status as any)}
-                                            className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest ${tag.color} flex items-center justify-between group/item`}
-                                        >
-                                            {tag.label}
-                                            {candidate.tagStatus === tag.status && <Check className="h-3 w-3" />}
-                                        </button>
-                                    ))}
+                            {isMenuOpen && (
+                                <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 animate-in fade-in zoom-in-95 pointer-events-auto">
+                                    <div className="p-1">
+                                        {[
+                                            { label: 'Shortlist', status: 'shortlisted', color: 'text-emerald-600 hover:bg-emerald-500/10' },
+                                            { label: 'Interview', status: 'interviewed', color: 'text-blue-600 hover:bg-blue-500/10' },
+                                            { label: 'Reject', status: 'rejected', color: 'text-rose-600 hover:bg-rose-500/10' },
+                                            { label: 'Applied', status: 'applied', color: 'text-slate-400 hover:bg-slate-500/10' }
+                                        ].map(tag => (
+                                            <button
+                                                key={tag.status}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUpdateStatus(tag.status as any);
+                                                }}
+                                                className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest ${tag.color} flex items-center justify-between group/item`}
+                                            >
+                                                {tag.label}
+                                                {candidate.tagStatus === tag.status && <Check className="h-3 w-3" />}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {candidate.processingStatus === 'completed' && (candidate.geminiAnalysis || candidate.analysis) && (
@@ -266,9 +316,14 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                                     {(candidate.geminiAnalysis?.education || candidate.analysis?.education || []).slice(0, 1).map((edu, idx) => (
                                         <div key={idx} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Education</p>
-                                            <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                            <p className="text-xs font-bold text-slate-900 dark:text-white">
                                                 {edu.degree}
                                             </p>
+                                            {edu.institution && (
+                                                <p className="text-[10px] text-slate-500 mt-0.5">
+                                                    {edu.institution}
+                                                </p>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -307,17 +362,17 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                             )}
 
                             {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).length > 0 && (
-                                <div className="p-6 rounded-3xl bg-blue-600 shadow-xl shadow-blue-500/20 text-white space-y-4 overflow-hidden relative">
-                                    <Sparkles className="absolute -right-6 -top-6 h-24 w-24 text-white/10" />
+                                <div className="p-6 rounded-3xl bg-slate-900 shadow-xl shadow-slate-900/20 text-white space-y-4 overflow-hidden relative border border-slate-800">
+                                    <div className="absolute -right-6 -top-6 h-24 w-24 bg-white/5 rounded-full" />
                                     <h4 className="flex items-center gap-3 text-xs font-black uppercase tracking-widest relative z-10">
                                         <Star className="h-4 w-4 fill-white" />
                                         Suggested Questions
                                     </h4>
                                     <ul className="space-y-3 relative z-10">
                                         {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).slice(0, 3).map((q, idx) => (
-                                            <li key={idx} className="text-xs flex gap-3 leading-relaxed bg-white/10 p-3 rounded-2xl border border-white/10">
-                                                <span className="font-black text-blue-200">{idx + 1}</span>
-                                                <span className="font-bold">{q}</span>
+                                            <li key={idx} className="text-xs flex gap-3 leading-relaxed bg-white/5 p-3 rounded-2xl border border-white/10 group/q">
+                                                <span className="font-black text-primary">{idx + 1}</span>
+                                                <span className="font-bold text-slate-200">{q}</span>
                                             </li>
                                         ))}
                                     </ul>
