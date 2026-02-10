@@ -206,14 +206,6 @@ export function CreateJobPage() {
                                 </div>
                             )}
                         </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="w-full text-slate-500 font-medium"
-                            onClick={() => navigate('/jobs')}
-                        >
-                            Save as Draft
-                        </Button>
                     </div>
                 </div>
             </form>
