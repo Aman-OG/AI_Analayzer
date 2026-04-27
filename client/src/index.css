@@ -1,16 +1,20 @@
+@import './styles/animations.css';
+@import './styles/glassmorphism.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    /* Color Variables */
     --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100% / 0.7;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100% / 0.8;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 210 100% 50%;
+    --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1% / 0.5;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -24,19 +28,44 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 210 100% 50%;
     --radius: 1rem;
+
+    /* Glassmorphism Variables */
     --glass-background: 255 255 255 / 0.1;
     --glass-border: 215 225 235 / 0.2;
     --glass-shadow: 0 12px 40px -6px rgba(15, 23, 42, 0.08), 0 8px 16px -4px rgba(15, 23, 42, 0.04);
+    --glass-backdrop-blur: blur(12px);
+
+    /* Animation Timing Constants */
+    --animation-fast: 100ms;
+    --animation-normal: 300ms;
+    --animation-slow: 500ms;
+    --animation-easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --animation-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-easing-in: cubic-bezier(0.4, 0, 1, 1);
+
+    /* Shadow Color Variables */
+    --shadow-color: 15 23 42;
+    --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.05);
+    --shadow-md: 0 4px 6px rgba(var(--shadow-color), 0.1);
+    --shadow-lg: 0 10px 15px rgba(var(--shadow-color), 0.1);
+    --shadow-xl: 0 20px 25px rgba(var(--shadow-color), 0.1);
+    --shadow-2xl: 0 25px 50px rgba(var(--shadow-color), 0.15);
+
+    /* High Contrast Mode Variables */
+    --hc-border-opacity: 0.3;
+    --hc-text-opacity: 1;
+    --hc-shadow-opacity: 0.1;
   }
 
   .dark {
+    /* Color Variables */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9% / 0.7;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9% / 0.8;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 100% 50%;
+    --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5% / 0.5;
     --secondary-foreground: 210 40% 98%;
@@ -49,16 +78,40 @@
     --border: 222.2 84% 12%;
     --input: 217.2 32.6% 17.5%;
     --ring: 210 100% 50%;
+
+    /* Glassmorphism Variables - Dark Mode */
     --glass-background: 0 0 0 / 0.2;
     --glass-border: 255 255 255 / 0.05;
     --glass-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    --glass-backdrop-blur: blur(16px);
+
+    /* Animation Timing Constants - Same as Light Mode */
+    --animation-fast: 100ms;
+    --animation-normal: 300ms;
+    --animation-slow: 500ms;
+    --animation-easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --animation-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-easing-in: cubic-bezier(0.4, 0, 1, 1);
+
+    /* Shadow Color Variables - Dark Mode */
+    --shadow-color: 0 0 0;
+    --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.1);
+    --shadow-md: 0 4px 6px rgba(var(--shadow-color), 0.2);
+    --shadow-lg: 0 10px 15px rgba(var(--shadow-color), 0.3);
+    --shadow-xl: 0 20px 25px rgba(var(--shadow-color), 0.4);
+    --shadow-2xl: 0 25px 50px rgba(var(--shadow-color), 0.5);
+
+    /* High Contrast Mode Variables - Dark Mode */
+    --hc-border-opacity: 0.15;
+    --hc-text-opacity: 1;
+    --hc-shadow-opacity: 0.3;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply backdrop-blur-md border;
-    background: hsl(var(--card));
+    @apply backdrop-blur-xl border;
+    background: hsla(var(--card) / 0.7);
     border-color: hsla(var(--border) / 0.5);
     box-shadow: var(--glass-shadow);
   }
@@ -70,8 +123,10 @@
   }
 
   .glass-card {
-    @apply glass rounded-2xl transition-all duration-300 hover:shadow-2xl hover:translate-y-[-2px];
-    border-color: hsla(var(--border) / 0.3);
+    @apply glass rounded-3xl transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px];
+    border-top: 1px solid hsla(var(--border) / 0.8);
+    border-left: 1px solid hsla(var(--border) / 0.4);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
   }
 
   .glass-input {

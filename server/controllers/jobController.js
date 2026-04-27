@@ -1,4 +1,4 @@
-const JobDescription = require('../models/JobDescriptionModel');
+const supabase = require('../config/supabaseClient');
 
 /**
  * Get all jobs for the logged-in user
@@ -8,29 +8,29 @@ const getAllJobs = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const jobs = await JobDescription.aggregate([
-            { $match: { userId } },
-            { $sort: { createdAt: -1 } },
-            {
-                $lookup: {
-                    from: 'resumes',
-                    localField: '_id',
-                    foreignField: 'jobId',
-                    as: 'resumes'
-                }
-            },
-            {
-                $addFields: {
-                    candidateCount: { $size: '$resumes' }
-                }
-            },
-            {
-                $project: {
-                    resumes: 0,
-                    __v: 0
-                }
-            }
-        ]);
+        const { data: jobsData, error } = await supabase
+            .from('job_descriptions')
+            .select(`
+                *,
+                resumes!left(id)
+            `)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            throw error;
+        }
+
+        // Map data to match frontend expectations (_id and candidateCount)
+        const jobs = jobsData.map(job => ({
+            ...job,
+            _id: job.id,
+            descriptionText: job.description_text,
+            mustHaveSkills: job.must_have_skills,
+            focusAreas: job.focus_areas,
+            createdAt: job.created_at,
+            candidateCount: job.resumes ? job.resumes.length : 0
+        }));
 
         res.status(200).json({
             success: true,
@@ -56,14 +56,28 @@ const getJobById = async (req, res) => {
         const { id } = req.params;
         const userId = req.user.id;
 
-        const job = await JobDescription.findOne({ _id: id, userId });
+        const { data: jobData, error } = await supabase
+            .from('job_descriptions')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
 
-        if (!job) {
+        if (error || !jobData) {
             return res.status(404).json({
                 success: false,
                 message: 'Job not found',
             });
         }
+
+        const job = {
+            ...jobData,
+            _id: jobData.id,
+            descriptionText: jobData.description_text,
+            mustHaveSkills: jobData.must_have_skills,
+            focusAreas: jobData.focus_areas,
+            createdAt: jobData.created_at,
+        };
 
         res.status(200).json({
             success: true,
@@ -95,14 +109,31 @@ const createJob = async (req, res) => {
             });
         }
 
-        const job = await JobDescription.create({
-            title,
-            company,
-            descriptionText,
-            mustHaveSkills: mustHaveSkills || [],
-            focusAreas: focusAreas || [],
-            userId,
-        });
+        const { data: jobData, error } = await supabase
+            .from('job_descriptions')
+            .insert({
+                user_id: userId,
+                title,
+                company,
+                description_text: descriptionText,
+                must_have_skills: mustHaveSkills || [],
+                focus_areas: focusAreas || []
+            })
+            .select()
+            .single();
+
+        if (error) {
+            throw error;
+        }
+
+        const job = {
+            ...jobData,
+            _id: jobData.id,
+            descriptionText: jobData.description_text,
+            mustHaveSkills: jobData.must_have_skills,
+            focusAreas: jobData.focus_areas,
+            createdAt: jobData.created_at,
+        };
 
         res.status(201).json({
             success: true,
@@ -129,23 +160,36 @@ const updateJob = async (req, res) => {
         const userId = req.user.id;
         const { title, company, descriptionText, mustHaveSkills, focusAreas } = req.body;
 
-        const job = await JobDescription.findOne({ _id: id, userId });
+        const updateData = { updated_at: new Date().toISOString() };
+        if (title) updateData.title = title;
+        if (company !== undefined) updateData.company = company;
+        if (descriptionText) updateData.description_text = descriptionText;
+        if (mustHaveSkills !== undefined) updateData.must_have_skills = mustHaveSkills;
+        if (focusAreas !== undefined) updateData.focus_areas = focusAreas;
 
-        if (!job) {
+        const { data: jobData, error } = await supabase
+            .from('job_descriptions')
+            .update(updateData)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error || !jobData) {
             return res.status(404).json({
                 success: false,
                 message: 'Job not found',
             });
         }
 
-        // Update fields
-        if (title) job.title = title;
-        if (company !== undefined) job.company = company;
-        if (descriptionText) job.descriptionText = descriptionText;
-        if (mustHaveSkills !== undefined) job.mustHaveSkills = mustHaveSkills;
-        if (focusAreas !== undefined) job.focusAreas = focusAreas;
-
-        await job.save();
+        const job = {
+            ...jobData,
+            _id: jobData.id,
+            descriptionText: jobData.description_text,
+            mustHaveSkills: jobData.must_have_skills,
+            focusAreas: jobData.focus_areas,
+            createdAt: jobData.created_at,
+        };
 
         res.status(200).json({
             success: true,
@@ -171,9 +215,15 @@ const deleteJob = async (req, res) => {
         const { id } = req.params;
         const userId = req.user.id;
 
-        const job = await JobDescription.findOneAndDelete({ _id: id, userId });
+        const { data: jobData, error } = await supabase
+            .from('job_descriptions')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
 
-        if (!job) {
+        if (error || !jobData) {
             return res.status(404).json({
                 success: false,
                 message: 'Job not found',

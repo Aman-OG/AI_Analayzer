@@ -12,6 +12,8 @@ import { CreateJobPage } from './pages/CreateJobPage';
 import { JobDetailsPage } from './pages/JobDetailsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { EditJobPage } from './pages/EditJobPage';
+import { AnalyticsDashboardPage } from './pages/AnalyticsDashboardPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -24,7 +26,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return user ? <>{children}</> : <Navigate to="/login" replace />;
+  return user ? <>{children}</> : <Navigate to="/" replace />;
 }
 
 function App() {
@@ -33,66 +35,101 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-            <Routes>
-              {/* Public Routes without Layout or with specific landing layout */}
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <ErrorBoundary>
+              <Routes>
+                {/* Public Routes without Layout or with specific landing layout */}
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-              {/* Protected Routes wrapped in DashboardLayout */}
-              <Route
-                path="/jobs"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <JobsListPage />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/jobs/create"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <CreateJobPage />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/jobs/edit/:id"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <EditJobPage />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/jobs/:id"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <JobDetailsPage />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <ProfilePage />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-            <Toaster position="top-right" richColors />
+                {/* Protected Routes wrapped in DashboardLayout */}
+                <Route
+                  path="/jobs"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout>
+                        <JobsListPage />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/jobs/create"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout>
+                        <CreateJobPage />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/jobs/edit/:id"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout>
+                        <EditJobPage />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/jobs/:id"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout>
+                        <JobDetailsPage />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout>
+                        <ProfilePage />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout>
+                        <AnalyticsDashboardPage />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </ErrorBoundary>
+            <Toaster
+              position="top-right"
+              richColors
+              // Entrance animation: slide-in from top-right (300ms)
+              toastOptions={{
+                duration: 4500, // Auto-dismiss: 4.5 seconds
+                classNames: {
+                  toast: 'animate-slide-up-normal',
+                  error: 'bg-red-600 text-white',
+                  success: 'bg-green-600 text-white',
+                  warning: 'bg-yellow-600 text-white',
+                  info: 'bg-blue-600 text-white',
+                },
+              }}
+              // Vertical stacking: 12px spacing between toasts
+              gap={12}
+              // Exit animation: slide-out + fade (300ms)
+              // Stagger animation: 50-100ms delay between multiple toasts
+              // Hover pause: pause auto-dismiss timer on hover
+              // Shadow enhancement on hover
+              theme="system"
+              // ARIA live region for screen reader announcements
+              containerAriaLabel="Notifications"
+            />
           </div>
         </BrowserRouter>
       </AuthProvider>

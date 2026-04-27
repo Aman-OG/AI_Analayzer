@@ -11,6 +11,7 @@ const {
 } = require('../controllers/resumeController');
 const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
+const { uploadLimiter, aiGenerateLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
@@ -18,13 +19,13 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // POST /api/resumes/upload - Upload and analyze resume
-router.post('/upload', upload.single('resume'), uploadResume);
+router.post('/upload', uploadLimiter, upload.single('resume'), uploadResume);
 
 // GET /api/resumes/candidates/:jobId - Get all candidates for a job
 router.get('/candidates/:jobId', getCandidates);
 
 // POST /api/resumes/interview-guide - Generate AI Interview Guide
-router.post('/interview-guide', generateInterviewGuide);
+router.post('/interview-guide', aiGenerateLimiter, generateInterviewGuide);
 
 // DELETE /api/resumes/bulk - Bulk delete candidates (MUST BE BEFORE /:id)
 router.delete('/bulk', bulkDeleteCandidates);

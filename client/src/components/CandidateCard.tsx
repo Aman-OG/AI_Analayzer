@@ -20,13 +20,14 @@ import {
     FileDown
 } from 'lucide-react';
 import { AnalysisStepper } from './AnalysisStepper';
+import { SendEmailModal } from './SendEmailModal';
 
 interface CandidateCardProps {
     candidate: Resume;
     isExpanded: boolean;
     onToggleExpand: () => void;
     onTogglePin: (e: React.MouseEvent) => void;
-    onUpdateStatus: (tagStatus: Resume['tagStatus']) => void;
+    onUpdateStatus: (tagStatus: Resume['tagStatus'], candidateEmail?: string | null, jobTitle?: string, companyName?: string) => void;
     isSelected: boolean;
     onToggleSelect: () => void;
     index: number;
@@ -56,6 +57,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
 }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const [emailModal, setEmailModal] = useState<{ isOpen: boolean, status: 'interviewed' | 'rejected' | null }>({ isOpen: false, status: null });
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -75,14 +77,26 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
         };
     }, [isMenuOpen]);
 
-    const handleUpdateStatus = (status: Resume['tagStatus']) => {
-        onUpdateStatus(status);
+    const handleUpdateStatusClick = (status: Resume['tagStatus']) => {
         setIsMenuOpen(false);
+        if (status === 'interviewed' || status === 'rejected') {
+            setEmailModal({ isOpen: true, status });
+        } else {
+            onUpdateStatus(status);
+        }
     };
+
+    const handleConfirmEmail = (email: string | null) => {
+        if (emailModal.status) {
+            onUpdateStatus(emailModal.status, email, jobTitle, company);
+        }
+        setEmailModal({ isOpen: false, status: null });
+    };
+
     return (
         <div
             style={{ animationDelay: `${index * 100}ms` }}
-            className={`group animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both glass-card relative ${isExpanded || !isCompact ? 'p-6' : 'p-3 hover:shadow-md'} ${isExpanded
+            className={`group animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both glass-card relative ${isExpanded || !isCompact ? 'p-8 md:p-10' : 'p-4 hover:shadow-md'} ${isExpanded
                 ? 'ring-2 ring-primary/30 shadow-2xl scale-[1.01] z-40'
                 : 'transition-all duration-300 hover:z-30'
                 } ${candidate.isPinned ? 'border-primary/20 bg-primary/5' : ''}`}
@@ -115,18 +129,18 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                             <FileText className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
-                            <h3 className="font-bold truncate max-w-[250px] text-foreground">
+                            <h3 className="font-bold text-lg md:text-xl truncate max-w-sm text-foreground">
                                 {candidate.candidateName || candidate.originalFilename}
                             </h3>
                             {candidate.candidateName && (
-                                <p className="text-[10px] text-slate-400 truncate">
+                                <p className="text-xs text-slate-400 truncate">
                                     {candidate.originalFilename}
                                 </p>
                             )}
                         </div>
                         {candidate.isTopPerformer && (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-600 text-[10px] font-black uppercase tracking-tighter shadow-sm border border-emerald-200 animate-pulse">
-                                <Star className="h-3 w-3 fill-emerald-600" />
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-tighter shadow-sm border border-emerald-200 dark:border-emerald-800/50 animate-pulse">
+                                <Star className="h-3 w-3 fill-emerald-600 dark:fill-emerald-400" />
                                 Best Fit
                             </div>
                         )}
@@ -139,27 +153,27 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                     )}
 
                     {candidate.processingStatus === 'completed' && candidate.score !== undefined && !isCompact && (
-                        <div className="flex items-center gap-8">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-6 md:gap-8 w-full">
                             <div className="text-center group-hover:scale-110 transition-transform duration-500">
-                                <div className={`text-4xl font-black ${getScoreColor(candidate.score)} leading-none drop-shadow-sm`}>
+                                <div className={`text-4xl md:text-5xl font-black ${getScoreColor(candidate.score)} leading-none drop-shadow-sm`}>
                                     {candidate.score}
-                                    <span className="text-sm text-slate-400 font-medium">/10</span>
+                                    <span className="text-sm md:text-base text-slate-400 font-medium">/10</span>
                                 </div>
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">AI Recommendation</div>
+                                <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter mt-2">AI Recommendation</div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-6 flex-1 max-w-md">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 flex-1 w-full max-w-full lg:max-w-xl">
                                 {[
-                                    { label: 'Technical', val: (candidate.geminiAnalysis || candidate.analysis)?.technicalFit },
-                                    { label: 'Experience', val: (candidate.geminiAnalysis || candidate.analysis)?.experienceMatch },
-                                    { label: 'Education', val: (candidate.geminiAnalysis || candidate.analysis)?.educationLevel }
+                                    { label: 'Technical', val: (candidate.aiAnalysis || candidate.analysis)?.technicalFit },
+                                    { label: 'Experience', val: (candidate.aiAnalysis || candidate.analysis)?.experienceMatch },
+                                    { label: 'Education', val: (candidate.aiAnalysis || candidate.analysis)?.educationLevel }
                                 ].map((m, i) => (
-                                    <div key={i} className="space-y-1">
-                                        <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                    <div key={i} className="space-y-1 md:space-y-1.5">
+                                        <div className="flex justify-between text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">
                                             <span>{m.label}</span>
                                             <span className={m.val && m.val >= 8 ? 'text-emerald-500' : ''}>{m.val ? Math.round(m.val * 10) : 0}%</span>
                                         </div>
-                                        <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+                                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                                             <div
                                                 className={`h-full transition-all duration-1000 ${m.val && m.val >= 8 ? 'bg-emerald-500' : 'bg-primary'}`}
                                                 style={{ width: `${(m.val || 0) * 10}%` }}
@@ -173,11 +187,11 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
 
                     {candidate.processingStatus === 'completed' && candidate.score !== undefined && isCompact && (
                         <div className="flex items-center gap-3">
-                            <div className={`text-xl font-black ${getScoreColor(candidate.score)}`}>
+                            <div className={`text-2xl font-black ${getScoreColor(candidate.score)}`}>
                                 {candidate.score}
-                                <span className="text-[10px] text-slate-400 font-medium tracking-tight">/10</span>
+                                <span className="text-xs text-slate-400 font-medium tracking-tight">/10</span>
                             </div>
-                            <div className="h-1 w-20 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-1.5 w-24 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <div
                                     className={`h-full ${getScoreColor(candidate.score).replace('text-', 'bg-')}`}
                                     style={{ width: `${candidate.score * 10}%` }}
@@ -226,6 +240,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                                         {[
                                             { label: 'Shortlist', status: 'shortlisted', color: 'text-emerald-600 hover:bg-emerald-500/10' },
                                             { label: 'Interview', status: 'interviewed', color: 'text-blue-600 hover:bg-blue-500/10' },
+                                            { label: 'Offered', status: 'offered', color: 'text-purple-600 hover:bg-purple-500/10' },
                                             { label: 'Reject', status: 'rejected', color: 'text-rose-600 hover:bg-rose-500/10' },
                                             { label: 'Applied', status: 'applied', color: 'text-slate-400 hover:bg-slate-500/10' }
                                         ].map(tag => (
@@ -233,7 +248,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                                                 key={tag.status}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleUpdateStatus(tag.status as any);
+                                                    handleUpdateStatusClick(tag.status as any);
                                                 }}
                                                 className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest ${tag.color} flex items-center justify-between group/item`}
                                             >
@@ -246,7 +261,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                             )}
                         </div>
 
-                        {candidate.processingStatus === 'completed' && (candidate.geminiAnalysis || candidate.analysis) && (
+                        {candidate.processingStatus === 'completed' && (candidate.aiAnalysis || candidate.analysis) && (
                             <div className="flex items-center gap-1">
                                 <Button
                                     variant="ghost"
@@ -275,7 +290,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                 </div>
             </div>
 
-            {isExpanded && (candidate.geminiAnalysis || candidate.analysis) && (
+            {isExpanded && (candidate.aiAnalysis || candidate.analysis) && (
                 <div className="mt-8 pt-8 border-t border-slate-200/50 dark:border-slate-800/50 space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Skills Section */}
@@ -288,10 +303,10 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                                     Extracted Skills
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
-                                    {(candidate.geminiAnalysis?.skills || candidate.analysis?.skills || []).map((skill, idx) => (
+                                    {(candidate.aiAnalysis?.skills || candidate.analysis?.skills || []).map((skill, idx) => (
                                         <span
                                             key={idx}
-                                            className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold shadow-sm border border-slate-200 dark:border-slate-700 hover:scale-105 transition-transform"
+                                            className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold shadow-sm border border-slate-200 dark:border-slate-700 hover:scale-105 transition-transform"
                                         >
                                             {skill}
                                         </span>
@@ -307,20 +322,20 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                                     Background
                                 </h4>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Experience</p>
-                                        <p className="text-sm font-black text-slate-900 dark:text-white capitalize">
-                                            {candidate.geminiAnalysis?.yearsExperience || candidate.analysis?.yearsExperience || 'N/A'}
+                                    <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                                        <p className="text-xs font-black text-slate-400 uppercase tracking-tighter mb-2">Experience</p>
+                                        <p className="text-base font-black text-slate-900 dark:text-white capitalize">
+                                            {candidate.aiAnalysis?.yearsExperience || candidate.analysis?.yearsExperience || 'N/A'}
                                         </p>
                                     </div>
-                                    {(candidate.geminiAnalysis?.education || candidate.analysis?.education || []).slice(0, 1).map((edu, idx) => (
-                                        <div key={idx} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Education</p>
-                                            <p className="text-xs font-bold text-slate-900 dark:text-white">
+                                    {(candidate.aiAnalysis?.education || candidate.analysis?.education || []).slice(0, 1).map((edu, idx) => (
+                                        <div key={idx} className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                                            <p className="text-xs font-black text-slate-400 uppercase tracking-tighter mb-2">Education</p>
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">
                                                 {edu.degree}
                                             </p>
                                             {edu.institution && (
-                                                <p className="text-[10px] text-slate-500 mt-0.5">
+                                                <p className="text-xs text-slate-500 mt-1">
                                                     {edu.institution}
                                                 </p>
                                             )}
@@ -336,24 +351,24 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                                 <div className="absolute -right-4 -top-4 p-4 rounded-full bg-blue-500/5 group-hover/just:scale-110 transition-transform">
                                     <Lightbulb className="h-12 w-12 text-blue-500/20" />
                                 </div>
-                                <h4 className="flex items-center gap-3 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                                <h4 className="flex items-center gap-3 text-xs md:text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
                                     Fit Justification
                                 </h4>
-                                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic font-medium relative z-10">
-                                    "{candidate.geminiAnalysis?.justification || candidate.analysis?.justification || 'No justification provided'}"
+                                <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed italic font-medium relative z-10">
+                                    "{candidate.aiAnalysis?.justification || candidate.analysis?.justification || 'No justification provided'}"
                                 </p>
                             </div>
 
-                            {((candidate.geminiAnalysis?.warnings?.length || 0) > 0 || (candidate.analysis?.warnings?.length || 0) > 0) && (
+                            {((candidate.aiAnalysis?.warnings?.length || 0) > 0 || (candidate.analysis?.warnings?.length || 0) > 0) && (
                                 <div className="p-6 rounded-3xl bg-red-500/5 border border-red-500/10 space-y-4">
                                     <h4 className="flex items-center gap-3 text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-widest">
                                         <ShieldAlert className="h-4 w-4" />
                                         Critical Gaps
                                     </h4>
                                     <ul className="space-y-2">
-                                        {(candidate.geminiAnalysis?.warnings || candidate.analysis?.warnings || []).map((warning, idx) => (
-                                            <li key={idx} className="flex items-start gap-3 text-xs text-red-700 dark:text-red-400 font-medium">
-                                                <div className="mt-1 h-1 w-1 rounded-full bg-red-500 shrink-0" />
+                                        {(candidate.aiAnalysis?.warnings || candidate.analysis?.warnings || []).map((warning, idx) => (
+                                            <li key={idx} className="flex items-start gap-3 text-sm text-red-700 dark:text-red-400 font-medium">
+                                                <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
                                                 {warning}
                                             </li>
                                         ))}
@@ -361,18 +376,18 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                                 </div>
                             )}
 
-                            {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).length > 0 && (
-                                <div className="p-6 rounded-3xl bg-slate-900 shadow-xl shadow-slate-900/20 text-white space-y-4 overflow-hidden relative border border-slate-800">
-                                    <div className="absolute -right-6 -top-6 h-24 w-24 bg-white/5 rounded-full" />
+                            {(candidate.aiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).length > 0 && (
+                                <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200 dark:shadow-slate-900/20 text-slate-900 dark:text-white space-y-4 overflow-hidden relative border border-slate-200 dark:border-slate-800 transition-colors">
+                                    <div className="absolute -right-6 -top-6 h-24 w-24 bg-blue-500/5 dark:bg-white/5 rounded-full" />
                                     <h4 className="flex items-center gap-3 text-xs font-black uppercase tracking-widest relative z-10">
-                                        <Star className="h-4 w-4 fill-white" />
+                                        <Star className="h-4 w-4 fill-blue-600 dark:fill-white text-blue-600 dark:text-white" />
                                         Suggested Questions
                                     </h4>
                                     <ul className="space-y-3 relative z-10">
-                                        {(candidate.geminiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).slice(0, 3).map((q, idx) => (
-                                            <li key={idx} className="text-xs flex gap-3 leading-relaxed bg-white/5 p-3 rounded-2xl border border-white/10 group/q">
-                                                <span className="font-black text-primary">{idx + 1}</span>
-                                                <span className="font-bold text-slate-200">{q}</span>
+                                        {(candidate.aiAnalysis?.interviewQuestions || candidate.analysis?.interviewQuestions || []).slice(0, 3).map((q, idx) => (
+                                            <li key={idx} className="text-sm flex gap-4 leading-relaxed bg-slate-50 dark:bg-white/5 p-4 rounded-2xl border border-slate-100 dark:border-white/10 group/q">
+                                                <span className="font-black text-primary text-base">{idx + 1}</span>
+                                                <span className="font-bold text-slate-700 dark:text-slate-200 pt-0.5">{q}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -381,6 +396,16 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {emailModal.isOpen && emailModal.status && (
+                <SendEmailModal
+                    candidateName={candidate.candidateName || 'Candidate'}
+                    status={emailModal.status}
+                    suggestedEmail={candidate.aiAnalysis?.email || candidate.analysis?.email || null} // Assuming AI might extract email if PII was bypassed, but typically null now since PII redaction
+                    onConfirm={handleConfirmEmail}
+                    onCancel={() => setEmailModal({ isOpen: false, status: null })}
+                />
             )}
         </div>
     );

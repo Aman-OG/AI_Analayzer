@@ -1,10 +1,31 @@
-const Resume = require('../models/ResumeModel');
-const JobDescription = require('../models/JobDescriptionModel');
 const supabase = require('../config/supabaseClient');
 const { parseResume } = require('../utils/resumeParser');
-const { triggerGroqAnalysis } = require('../services/groqService');
-const { generateInterviewGuide: generateAIGuide } = require('../services/geminiService');
+const { triggerGroqAnalysis, generateInterviewGuide: generateAIGuide } = require('../services/groqService');
 const crypto = require('crypto');
+const { sendInterviewEmail, sendRejectionEmail } = require('../services/emailService');
+
+const isValidUUID = (uuid) => {
+    return /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i.test(uuid);
+};
+
+// Utility to format Supabase resume row to match frontend Mongoose expectations
+const formatResume = (row) => ({
+    ...row,
+    _id: row.id,
+    jobId: row.job_id,
+    userId: row.user_id,
+    originalFilename: row.original_filename,
+    candidateName: row.candidate_name,
+    fileType: row.file_type,
+    fileHash: row.file_hash,
+    supabaseFileUrl: row.supabase_file_url,
+    extractedText: row.extracted_text,
+    processingStatus: row.processing_status,
+    aiAnalysis: row.gemini_analysis,
+    tagStatus: row.tag_status,
+    isPinned: row.is_pinned,
+    uploadTimestamp: row.upload_timestamp,
+});
 
 /**
  * Upload and analyze resume
@@ -23,28 +44,36 @@ const uploadResume = async (req, res) => {
             });
         }
 
-        if (!jobId) {
+        if (!jobId || !isValidUUID(jobId)) {
             return res.status(400).json({
                 success: false,
-                message: 'Job ID is required',
+                message: 'A valid Job ID is required',
             });
         }
 
         // Verify job exists and belongs to user
-        const job = await JobDescription.findOne({ _id: jobId, userId });
-        if (!job) {
+        const { data: job, error: jobError } = await supabase
+            .from('job_descriptions')
+            .select('id')
+            .eq('id', jobId)
+            .eq('user_id', userId)
+            .single();
+
+        if (jobError || !job) {
             return res.status(404).json({
                 success: false,
                 message: 'Job not found',
             });
         }
 
-        // Check for duplicate resume (same filename for the same job and user)
-        const duplicate = await Resume.findOne({
-            jobId,
-            userId,
-            originalFilename: file.originalname
-        });
+        // Check for duplicate resume
+        const { data: duplicate } = await supabase
+            .from('resumes')
+            .select('id')
+            .eq('job_id', jobId)
+            .eq('user_id', userId)
+            .eq('original_filename', file.originalname)
+            .maybeSingle();
 
         if (duplicate) {
             return res.status(400).json({
@@ -53,58 +82,59 @@ const uploadResume = async (req, res) => {
             });
         }
 
-        // Determine file type
         const fileType = file.mimetype === 'application/pdf' ? 'pdf' : 'docx';
-
-        // Calculate file hash for uniqueness optimization
         const fileHash = crypto.createHash('md5').update(file.buffer).digest('hex');
 
-        // Check if this job already has a completed analysis with the same hash
-        const existingHashResume = await Resume.findOne({
-            jobId,
-            fileHash,
-            processingStatus: 'completed'
-        });
+        // Check for existing hash analysis
+        const { data: existingHashResume } = await supabase
+            .from('resumes')
+            .select('*')
+            .eq('job_id', jobId)
+            .eq('file_hash', fileHash)
+            .eq('processing_status', 'completed')
+            .maybeSingle();
 
         if (existingHashResume) {
             console.log(`✨ Hash match found! Reusing analysis for file: ${file.originalname}`);
 
-            // Still upload to supabase for visibility, but link to existing results
             const fileName = `${userId}/${jobId}/${Date.now()}_${file.originalname}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('resumes')
                 .upload(fileName, file.buffer, { contentType: file.mimetype });
 
             if (!uploadError) {
                 const { data: urlData } = supabase.storage.from('resumes').getPublicUrl(fileName);
 
-                const resume = await Resume.create({
-                    jobId,
-                    userId,
-                    originalFilename: file.originalname,
-                    fileType,
-                    fileHash,
-                    supabaseFileUrl: urlData.publicUrl,
-                    extractedText: existingHashResume.extractedText,
-                    processingStatus: 'completed',
-                    score: existingHashResume.score,
-                    geminiAnalysis: existingHashResume.geminiAnalysis
-                });
+                const { data: resume, error: insertError } = await supabase
+                    .from('resumes')
+                    .insert({
+                        job_id: jobId,
+                        user_id: userId,
+                        original_filename: file.originalname,
+                        file_type: fileType,
+                        file_hash: fileHash,
+                        supabase_file_url: urlData.publicUrl,
+                        extracted_text: existingHashResume.extracted_text,
+                        processing_status: 'completed',
+                        score: existingHashResume.score,
+                        gemini_analysis: existingHashResume.gemini_analysis
+                    })
+                    .select()
+                    .single();
 
-                return res.status(201).json({
-                    success: true,
-                    message: 'Resume detected as duplicate (content). Analysis reused instantly.',
-                    resumeId: resume._id,
-                });
+                if (!insertError) {
+                    return res.status(201).json({
+                        success: true,
+                        message: 'Resume detected as duplicate (content). Analysis reused instantly.',
+                        resumeId: resume.id,
+                    });
+                }
             }
         }
 
-        // Extract text from file - with granular status
+        // Extract text
         let extractedText;
         try {
-            // We create the resume entry first to show 'parsing' status if possible, 
-            // but usually we want to parse before DB if we might fail.
-            // Let's parse first.
             extractedText = await parseResume(file.buffer, fileType);
         } catch (parseError) {
             return res.status(400).json({
@@ -120,7 +150,7 @@ const uploadResume = async (req, res) => {
             });
         }
 
-        // Upload file to Supabase Storage
+        // Upload file
         const fileName = `${userId}/${jobId}/${Date.now()}_${file.originalname}`;
         console.log(`📤 Uploading to Supabase: ${fileName}`);
 
@@ -132,40 +162,43 @@ const uploadResume = async (req, res) => {
             });
 
         if (uploadError) {
-            console.error('❌ Supabase upload error:', uploadError);
             return res.status(500).json({
                 success: false,
                 message: `File upload failed: ${uploadError.message}`,
             });
         }
-        console.log('✅ Supabase upload success:', uploadData.path);
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabase.storage.from('resumes').getPublicUrl(fileName);
+
+        // Save resume 'processing'
+        const { data: resume, error: insertError } = await supabase
             .from('resumes')
-            .getPublicUrl(fileName);
+            .insert({
+                job_id: jobId,
+                user_id: userId,
+                original_filename: file.originalname,
+                file_type: fileType,
+                file_hash: fileHash,
+                supabase_file_url: urlData.publicUrl,
+                extracted_text: extractedText,
+                processing_status: 'processing',
+            })
+            .select()
+            .single();
 
-        // Save resume to database with 'processing' status
-        const resume = await Resume.create({
-            jobId,
-            userId,
-            originalFilename: file.originalname,
-            fileType,
-            fileHash,
-            supabaseFileUrl: urlData.publicUrl,
-            extractedText,
-            processingStatus: 'processing',
-        });
+        if (insertError) {
+            throw insertError;
+        }
 
-        // Trigger async analysis (don't wait for it)
-        triggerGroqAnalysis(resume._id.toString()).catch(err => {
+        // Trigger async analysis
+        triggerGroqAnalysis(resume.id.toString()).catch(err => {
             console.error('Background analysis trigger error:', err);
         });
 
         res.status(201).json({
             success: true,
             message: 'Resume uploaded successfully. Analysis in progress.',
-            resumeId: resume._id,
+            resumeId: resume.id,
         });
 
     } catch (error) {
@@ -186,21 +219,41 @@ const getCandidates = async (req, res) => {
         const { jobId } = req.params;
         const userId = req.user.id;
 
-        // Verify job exists and belongs to user
-        const job = await JobDescription.findOne({ _id: jobId, userId });
-        if (!job) {
+        if (!jobId || !isValidUUID(jobId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Job ID format',
+            });
+        }
+
+        const { data: job, error: jobError } = await supabase
+            .from('job_descriptions')
+            .select('id')
+            .eq('id', jobId)
+            .eq('user_id', userId)
+            .single();
+
+        if (jobError || !job) {
             return res.status(404).json({
                 success: false,
                 message: 'Job not found',
             });
         }
 
-        // Get ALL resumes for this job (not just completed)
-        const resumes = await Resume.find({ jobId })
-            .select('-extractedText -__v') // Exclude large text field
-            .sort({ score: -1, uploadTimestamp: -1 });
+        // Get ALL resumes (exclude large text via Supabase select)
+        const { data: resumesData, error: resumesError } = await supabase
+            .from('resumes')
+            .select('id, job_id, user_id, original_filename, candidate_name, file_type, file_hash, supabase_file_url, processing_status, score, gemini_analysis, tag_status, is_pinned, upload_timestamp')
+            .eq('job_id', jobId)
+            .order('score', { ascending: false })
+            .order('upload_timestamp', { ascending: false });
 
-        // Calculate top 20% from completed resumes only
+        if (resumesError) {
+            throw resumesError;
+        }
+
+        const resumes = resumesData.map(formatResume);
+
         const completedResumes = resumes.filter(r => r.processingStatus === 'completed');
         const top20PercentCount = Math.ceil(completedResumes.length * 0.2);
         const topScores = completedResumes
@@ -209,14 +262,11 @@ const getCandidates = async (req, res) => {
             .slice(0, top20PercentCount);
         const minTopScore = topScores.length > 0 ? topScores[topScores.length - 1] : null;
 
-        // Add isTopPerformer flag
         const candidatesWithFlags = resumes.map(resume => {
-            const resumeObj = resume.toObject();
-            resumeObj.isTopPerformer =
-                resume.processingStatus === 'completed' &&
-                minTopScore !== null &&
-                resume.score >= minTopScore;
-            return resumeObj;
+            return {
+                ...resume,
+                isTopPerformer: resume.processingStatus === 'completed' && minTopScore !== null && resume.score >= minTopScore
+            };
         });
 
         res.status(200).json({
@@ -243,18 +293,20 @@ const deleteCandidate = async (req, res) => {
         const { id } = req.params;
         const userId = req.user.id;
 
-        const resume = await Resume.findOneAndDelete({ _id: id, userId });
+        const { data: resume, error } = await supabase
+            .from('resumes')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
 
-        if (!resume) {
+        if (error || !resume) {
             return res.status(404).json({
                 success: false,
                 message: 'Candidate not found',
             });
         }
-
-        // Optional: Delete from Supabase Storage as well if needed
-        // const filePath = resume.supabaseFileUrl.split('/resumes/')[1];
-        // await supabase.storage.from('resumes').remove([filePath]);
 
         res.status(200).json({
             success: true,
@@ -269,6 +321,7 @@ const deleteCandidate = async (req, res) => {
         });
     }
 };
+
 /**
  * Update candidate status (tag)
  * PATCH /api/resumes/:id/status
@@ -276,10 +329,10 @@ const deleteCandidate = async (req, res) => {
 const updateStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { tagStatus } = req.body;
+        const { tagStatus, candidateEmail, jobTitle, companyName } = req.body;
         const userId = req.user.id;
 
-        const validStatuses = ['applied', 'shortlisted', 'interviewed', 'rejected'];
+        const validStatuses = ['applied', 'shortlisted', 'interviewed', 'offered', 'rejected'];
         if (!validStatuses.includes(tagStatus)) {
             return res.status(400).json({
                 success: false,
@@ -287,22 +340,43 @@ const updateStatus = async (req, res) => {
             });
         }
 
-        const resume = await Resume.findOneAndUpdate(
-            { _id: id, userId },
-            { tagStatus },
-            { new: true }
-        );
+        const { data: resume, error } = await supabase
+            .from('resumes')
+            .update({ tag_status: tagStatus })
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
 
-        if (!resume) {
+        if (error || !resume) {
             return res.status(404).json({
                 success: false,
                 message: 'Candidate not found',
             });
         }
 
+        // Trigger email if requested and status matches
+        if (candidateEmail && jobTitle) {
+            if (tagStatus === 'rejected') {
+                sendRejectionEmail({
+                    candidateName: resume.candidate_name,
+                    candidateEmail,
+                    jobTitle,
+                    company: companyName
+                });
+            } else if (tagStatus === 'interviewed') {
+                sendInterviewEmail({
+                    candidateName: resume.candidate_name,
+                    candidateEmail,
+                    jobTitle,
+                    company: companyName
+                });
+            }
+        }
+
         res.status(200).json({
             success: true,
-            candidate: resume,
+            candidate: formatResume(resume),
         });
     } catch (error) {
         console.error('Update status error:', error);
@@ -322,20 +396,33 @@ const togglePin = async (req, res) => {
         const { id } = req.params;
         const userId = req.user.id;
 
-        const resume = await Resume.findOne({ _id: id, userId });
-        if (!resume) {
+        const { data: currentResume, error: fetchError } = await supabase
+            .from('resumes')
+            .select('is_pinned')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+
+        if (fetchError || !currentResume) {
             return res.status(404).json({
                 success: false,
                 message: 'Candidate not found',
             });
         }
 
-        resume.isPinned = !resume.isPinned;
-        await resume.save();
+        const { data: resume, error } = await supabase
+            .from('resumes')
+            .update({ is_pinned: !currentResume.is_pinned })
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
 
         res.status(200).json({
             success: true,
-            candidate: resume,
+            candidate: formatResume(resume),
         });
     } catch (error) {
         console.error('Toggle pin error:', error);
@@ -352,10 +439,10 @@ const togglePin = async (req, res) => {
  */
 const bulkUpdateStatus = async (req, res) => {
     try {
-        const { ids, tagStatus } = req.body;
+        const { ids, tagStatus, candidateEmail, jobTitle, companyName } = req.body;
         const userId = req.user.id;
 
-        const validStatuses = ['applied', 'shortlisted', 'interviewed', 'rejected'];
+        const validStatuses = ['applied', 'shortlisted', 'interviewed', 'offered', 'rejected'];
         if (!validStatuses.includes(tagStatus)) {
             return res.status(400).json({
                 success: false,
@@ -363,14 +450,24 @@ const bulkUpdateStatus = async (req, res) => {
             });
         }
 
-        const result = await Resume.updateMany(
-            { _id: { $in: ids }, userId },
-            { tagStatus }
-        );
+        const { data, error } = await supabase
+            .from('resumes')
+            .update({ tag_status: tagStatus })
+            .in('id', ids)
+            .eq('user_id', userId)
+            .select();
+
+        if (error) throw error;
+
+        // If email was requested, send to ALL updated candidates
+        // Note: For bulk, candidateEmail is ignored since we try to use the DB or we don't send emails for bulk.
+        // Bulk emails without stored emails is tricky. Let's just update status for now.
+        // If we want to send bulk emails, we need their emails stored in DB.
+        // We'll skip bulk emails to keep it simple, or only send to the first one if provided.
 
         res.status(200).json({
             success: true,
-            message: `${result.modifiedCount} candidates updated`,
+            message: `${data.length} candidates updated`,
         });
     } catch (error) {
         console.error('Bulk update status error:', error);
@@ -390,38 +487,65 @@ const generateInterviewGuide = async (req, res) => {
         const { jobId, candidateIds } = req.body;
         const userId = req.user.id;
 
-        if (!jobId || !candidateIds || !Array.isArray(candidateIds)) {
+        if (!jobId || !isValidUUID(jobId)) {
             return res.status(400).json({
                 success: false,
-                message: 'Job ID and candidate IDs are required',
+                message: 'A valid Job ID is required',
             });
         }
 
-        // Verify job belongs to user
-        const job = await JobDescription.findOne({ _id: jobId, userId });
-        if (!job) {
+        if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0 || candidateIds.length > 10) {
+            return res.status(400).json({
+                success: false,
+                message: 'Candidate IDs array is required (max 10 candidates)',
+            });
+        }
+        
+        if (!candidateIds.every(isValidUUID)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid candidate ID format in array',
+            });
+        }
+
+        const { data: job, error: jobError } = await supabase
+            .from('job_descriptions')
+            .select('*')
+            .eq('id', jobId)
+            .eq('user_id', userId)
+            .single();
+
+        if (jobError || !job) {
             return res.status(404).json({
                 success: false,
                 message: 'Job not found',
             });
         }
 
-        // Get candidates and verify they belong to user and job
-        const candidates = await Resume.find({
-            _id: { $in: candidateIds },
-            jobId,
-            userId
-        });
+        const { data: candidatesData, error: candidatesError } = await supabase
+            .from('resumes')
+            .select('*')
+            .in('id', candidateIds)
+            .eq('job_id', jobId)
+            .eq('user_id', userId);
 
-        if (candidates.length === 0) {
+        if (candidatesError || !candidatesData || candidatesData.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'No matching candidates found',
             });
         }
+        
+        const formattedJob = {
+            ...job,
+            descriptionText: job.description_text,
+            mustHaveSkills: job.must_have_skills,
+            focusAreas: job.focus_areas,
+        };
 
-        // Generate guide using Gemini
-        const guide = await generateAIGuide(job, candidates);
+        const candidates = candidatesData.map(formatResume);
+
+        const guide = await generateAIGuide(formattedJob, candidates);
 
         res.status(200).json({
             success: true,
@@ -452,11 +576,18 @@ const bulkDeleteCandidates = async (req, res) => {
             });
         }
 
-        const result = await Resume.deleteMany({ _id: { $in: ids }, userId });
+        const { data, error } = await supabase
+            .from('resumes')
+            .delete()
+            .in('id', ids)
+            .eq('user_id', userId)
+            .select();
+
+        if (error) throw error;
 
         res.status(200).json({
             success: true,
-            message: `${result.deletedCount} candidates deleted successfully`,
+            message: `${data ? data.length : 0} candidates deleted successfully`,
         });
 
     } catch (error) {

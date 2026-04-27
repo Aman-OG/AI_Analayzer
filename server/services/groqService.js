@@ -1,6 +1,7 @@
 const { Groq } = require('groq-sdk');
-const Resume = require('../models/ResumeModel');
-const geminiQueue = require('../utils/GeminiQueue'); // We'll adapt the queue name later or reuse it
+const supabase = require('../config/supabaseClient');
+const { redactPII } = require('../utils/piiRedactor');
+const requestQueue = require('../utils/RequestQueue');
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
@@ -29,6 +30,13 @@ const constructPrompt = (jobDescriptionText, resumeText, mustHaveSkills = [], fo
 
     return `Analyze the following resume against the provided job description.
 Your goal is to extract specific information, evaluate the candidate's fit, and provide a score.
+
+**Instructions for evaluation:**
+1. Compare the candidate's skills, experience, and education against the job description.
+2. The candidate's text has been pre-redacted for PII to prevent bias.
+3. Be highly objective and critical. Provide a realistic score (1-10).
+4. Identify missing critical skills as "red flags".
+5. Extract the candidate's name if visible, otherwise return "Unknown Candidate".
 
 **IMPORTANT INSTRUCTIONS:**
 1. RESPOND ONLY IN VALID JSON FORMAT. Do not include any text outside the JSON structure.
@@ -78,17 +86,47 @@ ${resumeText}
 **Now, provide your analysis in the specified JSON format only:**`;
 };
 
+const safeParseJSON = (text) => {
+    try {
+        return JSON.parse(text);
+    } catch (e1) {
+        try {
+            const stripped = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+            return JSON.parse(stripped);
+        } catch (e2) {
+            try {
+                const firstBrace = text.indexOf('{');
+                const lastBrace = text.lastIndexOf('}');
+                if (firstBrace !== -1 && lastBrace !== -1) {
+                    const jsonText = text.substring(firstBrace, lastBrace + 1);
+                    return JSON.parse(jsonText);
+                }
+            } catch (e3) {
+                // fall through to error
+            }
+        }
+        throw new Error('AI returned an invalid JSON structure that could not be repaired.');
+    }
+};
+
 /**
  * Call Groq API with fallback logic
  * @param {string} prompt - The prompt to send
  * @param {boolean} useFallback - Whether to use the fallback model
+ * @param {number} retries - Number of retries for parsing errors
  * @returns {Promise<Object>} Parsed analysis
  */
-const analyzeWithGroq = async (prompt, useFallback = false) => {
+const analyzeWithGroq = async (prompt, useFallback = false, retries = 1) => {
     const model = useFallback ? FALLBACK_MODEL : PRIMARY_MODEL;
     console.log(`🤖 Analyzing with Groq Model: ${model}`);
 
     try {
+        // Add abort controller for timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => {
+            controller.abort();
+        }, 45000); // 45 seconds timeout
+
         const chatCompletion = await groq.chat.completions.create({
             messages: [
                 {
@@ -100,37 +138,40 @@ const analyzeWithGroq = async (prompt, useFallback = false) => {
             temperature: 0.1, // Low temperature for consistent JSON
             max_completion_tokens: useFallback ? 1024 : 4096, // Adjust tokens for fallback
             response_format: { type: "json_object" } // Force JSON mode if available
-        });
+        }, { signal: controller.signal });
+
+        clearTimeout(timeout);
 
         let text = chatCompletion.choices[0]?.message?.content || '';
-
-        // Strip markdown code fences if present (just in case)
-        text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-
-        // Extract JSON between first { and last }
-        const firstBrace = text.indexOf('{');
-        const lastBrace = text.lastIndexOf('}');
-
-        if (firstBrace === -1 || lastBrace === -1) {
-            throw new Error('No JSON object found in response');
-        }
-
-        const jsonText = text.substring(firstBrace, lastBrace + 1);
-        const analysis = JSON.parse(jsonText);
+        
+        const analysis = safeParseJSON(text);
 
         // Validate required fields
         if (!analysis.fitScore || !analysis.justification) {
             throw new Error('Missing required fields: fitScore or justification');
         }
 
+        // Clamp fitScore
+        if (typeof analysis.fitScore === 'number') {
+            analysis.fitScore = Math.max(1, Math.min(10, analysis.fitScore));
+        } else {
+             analysis.fitScore = 5; // fallback
+        }
+
         return analysis;
     } catch (error) {
         console.error(`❌ Error with model ${model}:`, error.message);
 
+        // Retry on parsing errors or timeout
+        if ((error.message.includes('JSON') || error.name === 'AbortError') && retries > 0) {
+             console.log(`⚠️ Retrying analysis due to parsing/timeout error. Retries left: ${retries - 1}`);
+             return analyzeWithGroq(prompt, useFallback, retries - 1);
+        }
+
         // If primary model fails, try fallback
         if (!useFallback) {
             console.log(`⚠️ Switching to fallback model: ${FALLBACK_MODEL}`);
-            return analyzeWithGroq(prompt, true);
+            return analyzeWithGroq(prompt, true, 1);
         }
 
         // If fallback also fails, throw error
@@ -184,58 +225,68 @@ const scanForPII = (analysis) => {
  */
 const triggerGroqAnalysis = async (resumeId) => {
     // Reuse existing queue mechanism
-    await geminiQueue.add(async () => {
+    await requestQueue.add(async () => {
         try {
             console.log(`🔄 Starting analysis for resume (Groq): ${resumeId}`);
 
             // Update status to processing
-            const resume = await Resume.findById(resumeId).populate('jobId');
-            if (!resume) {
+            const { data: resume, error: resumeError } = await supabase
+                .from('resumes')
+                .select(`
+                    *,
+                    job_descriptions (*)
+                `)
+                .eq('id', resumeId)
+                .single();
+
+            if (resumeError || !resume) {
                 throw new Error('Resume not found');
             }
 
-            resume.processingStatus = 'processing';
-            await resume.save();
+            await supabase.from('resumes').update({ processing_status: 'processing' }).eq('id', resumeId);
 
             // Get job description
-            const job = resume.jobId;
+            const job = resume.job_descriptions;
             if (!job) {
                 throw new Error('Job description not found');
             }
 
+            // 4. Redact PII from the extracted text
+            console.log(`🛡️ Redacting PII for resume ${resumeId}...`);
+            const { redactedText, extractedPII } = redactPII(resume.extracted_text);
+
             // Construct prompt
             const prompt = constructPrompt(
-                job.descriptionText,
-                resume.extractedText,
-                job.mustHaveSkills,
-                job.focusAreas
+                job.description_text,
+                redactedText,
+                job.must_have_skills,
+                job.focus_areas
             );
 
             // Update status to scoring
-            resume.processingStatus = 'scoring';
-            await resume.save();
+            await supabase.from('resumes').update({ processing_status: 'scoring' }).eq('id', resumeId);
 
             // Call Groq API
             const analysis = await analyzeWithGroq(prompt);
 
             // Update status to finalizing
-            resume.processingStatus = 'finalizing';
-            await resume.save();
+            await supabase.from('resumes').update({ processing_status: 'finalizing' }).eq('id', resumeId);
 
             // Scan for PII
             const sanitizedAnalysis = scanForPII(analysis);
 
             // Check Document Validation
             if (sanitizedAnalysis.isResume === false) {
-                resume.processingStatus = 'error';
-                resume.errorDetails = 'Rejected: This document does not appear to be a resume (AI Validation Failed).';
-                await resume.save();
+                await supabase.from('resumes').update({
+                    processing_status: 'error',
+                    gemini_analysis: { errorDetails: 'Rejected: This document does not appear to be a resume (AI Validation Failed).' }
+                }).eq('id', resumeId);
                 console.log(`❌ Analysis rejected (Not a resume): ${resumeId}`);
                 return;
             }
 
             // Update resume with results
-            resume.geminiAnalysis = {
+            const aiAnalysis = {
                 skills: sanitizedAnalysis.skills || [],
                 yearsExperience: sanitizedAnalysis.yearsExperience || null,
                 education: sanitizedAnalysis.education || [],
@@ -247,24 +298,24 @@ const triggerGroqAnalysis = async (resumeId) => {
                 warnings: sanitizedAnalysis.warnings || [],
                 interviewQuestions: sanitizedAnalysis.interviewQuestions || [],
             };
-            resume.candidateName = sanitizedAnalysis.candidateName || null;
-            resume.score = sanitizedAnalysis.fitScore;
-            resume.processingStatus = 'completed';
-            resume.errorDetails = null;
 
-            await resume.save();
-            console.log(`✅ Analysis completed for resume: ${resumeId} (Score: ${resume.score})`);
+            await supabase.from('resumes').update({
+                gemini_analysis: aiAnalysis,
+                candidate_name: sanitizedAnalysis.candidateName || extractedPII.assumedName || 'Unknown Candidate',
+                score: sanitizedAnalysis.fitScore,
+                processing_status: 'completed'
+            }).eq('id', resumeId);
+            
+            console.log(`✅ Analysis completed for resume: ${resumeId} (Score: ${sanitizedAnalysis.fitScore})`);
 
         } catch (error) {
             console.error(`❌ Analysis failed for resume ${resumeId}:`, error.message);
 
             // Update resume with error
-            const resume = await Resume.findById(resumeId);
-            if (resume) {
-                resume.processingStatus = 'error';
-                resume.errorDetails = error.message;
-                await resume.save();
-            }
+            await supabase.from('resumes').update({
+                processing_status: 'error',
+                gemini_analysis: { errorDetails: error.message }
+            }).eq('id', resumeId);
 
             // Re-throw to let queue handle it
             throw error;
@@ -272,6 +323,72 @@ const triggerGroqAnalysis = async (resumeId) => {
     });
 };
 
+/**
+ * Generate a comprehensive interview guide for the top candidates using Groq
+ * @param {Object} job - Job description object
+ * @param {Array<Object>} candidates - List of candidate objects
+ * @returns {Promise<string>} Markdown formatted interview guide
+ */
+const generateInterviewGuide = async (job, candidates) => {
+    try {
+        const candidateSummaries = candidates.map((c, i) => {
+            const analysis = c.aiAnalysis || c.geminiAnalysis || c.analysis || {};
+            const warnings = Array.isArray(analysis.warnings) ? analysis.warnings : [];
+            const skills = Array.isArray(analysis.skills) ? analysis.skills : [];
+            return `
+CANDIDATE ${i + 1}: ${c.candidateName || c.originalFilename}
+FIT SCORE: ${c.score}/10
+STRENGTHS: ${analysis.justification || 'N/A'}
+GAPS/WARNINGS: ${warnings.join(', ') || 'None'}
+SKILLS: ${skills.join(', ') || 'N/A'}
+`;
+        }).join('\n---\n');
+
+        const prompt = `You are an expert technical recruiter and hiring manager.
+Generate a structured, professional Interview Guide for the following position based on the top candidate's profiles.
+
+JOB TITLE: ${job.title}
+COMPANY: ${job.company || 'Internal'}
+JOB DESCRIPTION SUMMARY:
+${job.descriptionText ? job.descriptionText.substring(0, 500) : ''}...
+
+TOP CANDIDATES DATA:
+${candidateSummaries}
+
+---
+INSTRUCTIONS:
+1. Provide a 'General Interview Strategy' for this specific role.
+2. For EACH candidate, provide:
+   - 3-4 Targeted Interview Questions specifically designed to probe their 'Gaps/Warnings' or verify high-impact skills.
+   - What to look for in their answers (ideal response patterns).
+   - A 'Deep Dive' technical topic unique to their background.
+3. Include a 'Comparative Analysis' section at the end to help the interviewer choose between them.
+4. Format the entire response in clean Markdown.
+5. DO NOT include PII. Use the candidate names as provided.
+
+Respond ONLY with the Markdown content.`;
+
+        console.log(`🤖 Generating Interview Guide with Groq Model: ${PRIMARY_MODEL}`);
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            model: PRIMARY_MODEL,
+            temperature: 0.5,
+            max_completion_tokens: 2048,
+        });
+
+        return chatCompletion.choices[0]?.message?.content || '';
+    } catch (error) {
+        console.error('Groq Interview Guide error:', error.message);
+        throw error;
+    }
+};
+
 module.exports = {
-    triggerGroqAnalysis
+    triggerGroqAnalysis,
+    generateInterviewGuide
 };

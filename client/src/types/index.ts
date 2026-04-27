@@ -28,7 +28,7 @@ export type Education = {
     graduationYear: string;
 };
 
-export type GeminiAnalysis = {
+export type aiAnalysis = {
     skills: string[];
     yearsExperience: number | string;
     education: Education[];
@@ -50,15 +50,15 @@ export type Resume = {
     fileType: 'pdf' | 'docx';
     fileHash?: string;
     isReviewed?: boolean;
-    tagStatus?: 'applied' | 'shortlisted' | 'interviewed' | 'rejected';
+    tagStatus?: 'applied' | 'shortlisted' | 'interviewed' | 'offered' | 'rejected';
     isPinned?: boolean;
     supabaseFileUrl: string;
     uploadTimestamp: string;
     processingStatus: 'uploaded' | 'processing' | 'completed' | 'error' | 'parsing' | 'scoring' | 'finalizing';
     errorDetails?: string;
     score?: number;
-    geminiAnalysis?: GeminiAnalysis;
-    analysis?: GeminiAnalysis;
+    aiAnalysis?: aiAnalysis;
+    analysis?: aiAnalysis;
     isTopPerformer?: boolean;
     createdAt: string;
     updatedAt: string;

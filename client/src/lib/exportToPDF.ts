@@ -24,8 +24,8 @@ export function exportTopCandidatesToPDF(jobTitle: string, company: string, cand
         `#${index + 1}`,
         c.candidateName || c.originalFilename,
         `${c.score || 0}/10`,
-        c.geminiAnalysis?.yearsExperience || 'N/A',
-        (c.geminiAnalysis?.skills || []).slice(0, 5).join(', ')
+        c.aiAnalysis?.yearsExperience || 'N/A',
+        (c.aiAnalysis?.skills || []).slice(0, 5).join(', ')
     ]);
 
     autoTable(doc, {
@@ -52,19 +52,19 @@ export function exportTopCandidatesToPDF(jobTitle: string, company: string, cand
 
         doc.setFontSize(10);
         doc.setTextColor(71, 85, 105); // Slate-600
-        const justification = c.geminiAnalysis?.justification || 'No justification available.';
+        const justification = c.aiAnalysis?.justification || 'No justification available.';
         const splitJustification = doc.splitTextToSize(`Justification: ${justification}`, 180);
         doc.text(splitJustification, 14, currentY);
         currentY += splitJustification.length * 5 + 5;
 
-        if (c.geminiAnalysis?.interviewQuestions && c.geminiAnalysis.interviewQuestions.length > 0) {
+        if (c.aiAnalysis?.interviewQuestions && c.aiAnalysis.interviewQuestions.length > 0) {
             doc.setFontSize(10);
             doc.setTextColor(37, 99, 235);
             doc.text('Suggested Interview Questions:', 14, currentY);
             currentY += 6;
 
             doc.setTextColor(71, 85, 105);
-            c.geminiAnalysis.interviewQuestions.slice(0, 3).forEach((q) => {
+            c.aiAnalysis.interviewQuestions.slice(0, 3).forEach((q) => {
                 const splitQ = doc.splitTextToSize(`• ${q}`, 170);
                 doc.text(splitQ, 18, currentY);
                 currentY += splitQ.length * 5;
@@ -89,7 +89,7 @@ export function exportTopCandidatesToPDF(jobTitle: string, company: string, cand
 
 export function exportSingleCandidateToPDF(jobTitle: string, company: string, candidate: Resume) {
     const doc = new jsPDF();
-    const analysis = candidate.geminiAnalysis || candidate.analysis;
+    const analysis = candidate.aiAnalysis || candidate.analysis;
     if (!analysis) return;
 
     // Header with background

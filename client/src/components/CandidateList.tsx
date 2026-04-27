@@ -81,9 +81,9 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
         }
     };
 
-    const handleUpdateStatus = async (id: string, tagStatus: Resume['tagStatus']) => {
+    const handleUpdateStatus = async (id: string, tagStatus: Resume['tagStatus'], candidateEmail?: string | null, jobTitle?: string, companyName?: string) => {
         try {
-            const data = await resumeService.updateStatus(id, tagStatus!);
+            const data = await resumeService.updateStatus(id, tagStatus!, candidateEmail, jobTitle, companyName);
             if (data.success) {
                 setCandidates(prev => prev.map(c => c._id === id ? data.candidate : c));
                 toast.success(`Candidate marked as ${tagStatus}`);
@@ -119,6 +119,8 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                 return <Badge className="bg-emerald-500 text-white border-none">Shortlisted</Badge>;
             case 'interviewed':
                 return <Badge className="bg-blue-500 text-white border-none">Interviewed</Badge>;
+            case 'offered':
+                return <Badge className="bg-purple-500 text-white border-none">Offered</Badge>;
             case 'rejected':
                 return <Badge className="bg-rose-500 text-white border-none transition-all duration-300">Rejected</Badge>;
             default:
@@ -130,14 +132,14 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
         switch (status) {
             case 'uploaded':
                 return (
-                    <Badge variant="secondary" className="bg-slate-100 text-slate-600 animate-pulse border-none">
+                    <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 animate-pulse border-none">
                         <Clock className="h-3 w-3 mr-1" />
                         Queued
                     </Badge>
                 );
             case 'parsing':
                 return (
-                    <Badge className="bg-yellow-100 text-yellow-600 animate-pulse border-none">
+                    <Badge className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 animate-pulse border-none">
                         <FileText className="h-3 w-3 mr-1" />
                         Extracting...
                     </Badge>
@@ -145,28 +147,28 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
             case 'processing':
             case 'scoring':
                 return (
-                    <Badge className="bg-blue-100 text-blue-600 animate-pulse border-none">
+                    <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 animate-pulse border-none">
                         <Zap className="h-3 w-3 mr-1" />
                         AI Scoring...
                     </Badge>
                 );
             case 'finalizing':
                 return (
-                    <Badge className="bg-indigo-100 text-indigo-600 animate-pulse border-none">
+                    <Badge className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 animate-pulse border-none">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Finalizing...
                     </Badge>
                 );
             case 'completed':
                 return (
-                    <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 pointer-events-none">
+                    <Badge className="bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 dark:border-emerald-500/10 pointer-events-none">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Matched
                     </Badge>
                 );
             case 'error':
                 return (
-                    <Badge variant="destructive" className="bg-red-100 text-red-600 border-none">
+                    <Badge variant="destructive" className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-none">
                         <AlertCircle className="h-3 w-3 mr-1" />
                         Failed
                     </Badge>
@@ -256,6 +258,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                                 { id: 'all', label: 'All' },
                                 { id: 'shortlisted', label: 'Shortlist' },
                                 { id: 'interviewed', label: 'Interview' },
+                                { id: 'offered', label: 'Offered' },
                                 { id: 'rejected', label: 'Rejected' }
                             ].map((f) => (
                                 <button
@@ -297,7 +300,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                                 <Button
                                     size="sm"
                                     onClick={() => handleBulkStatusUpdate('shortlisted')}
-                                    className="h-9 px-4 rounded-xl bg-white dark:bg-slate-900 text-emerald-600 border border-emerald-100 dark:border-emerald-900/50 hover:bg-emerald-500/10 font-bold text-xs"
+                                    className="h-9 px-4 rounded-xl bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 hover:bg-emerald-500/10 font-bold text-xs"
                                 >
                                     <Users className="h-3.5 w-3.5 mr-2" />
                                     Shortlist
@@ -305,7 +308,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                                 <Button
                                     size="sm"
                                     onClick={() => handleBulkStatusUpdate('interviewed')}
-                                    className="h-9 px-4 rounded-xl bg-white dark:bg-slate-900 text-blue-600 border border-blue-100 dark:border-blue-900/50 hover:bg-blue-500/10 font-bold text-xs"
+                                    className="h-9 px-4 rounded-xl bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 hover:bg-blue-500/10 font-bold text-xs"
                                 >
                                     <Mail className="h-3.5 w-3.5 mr-2" />
                                     Interview
@@ -313,7 +316,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                                 <Button
                                     size="sm"
                                     onClick={() => handleBulkStatusUpdate('rejected')}
-                                    className="h-9 px-4 rounded-xl bg-white dark:bg-slate-900 text-rose-600 border border-rose-100 dark:border-rose-900/50 hover:bg-rose-500/10 font-bold text-xs"
+                                    className="h-9 px-4 rounded-xl bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 hover:bg-rose-500/10 font-bold text-xs"
                                 >
                                     <UserCheck className="h-3.5 w-3.5 mr-2" />
                                     Reject
@@ -332,7 +335,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                                     variant="ghost"
                                     size="sm"
                                     onClick={handleBulkDelete}
-                                    className="h-9 px-4 rounded-xl text-rose-600 hover:bg-rose-500/10 font-bold text-xs"
+                                    className="h-9 px-4 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 font-bold text-xs"
                                 >
                                     <Trash2 className="h-3.5 w-3.5 mr-2" />
                                     Delete
@@ -399,7 +402,7 @@ export function CandidateList({ jobId, jobTitle, company, refreshTrigger }: Cand
                             onToggleExpand={() => setExpandedId(expandedId === candidate._id ? null : candidate._id)}
                             onToggleSelect={() => toggleSelect(candidate._id)}
                             onTogglePin={(e) => handleTogglePin(e, candidate._id)}
-                            onUpdateStatus={(status) => handleUpdateStatus(candidate._id, status)}
+                            onUpdateStatus={(status, email, jTitle, cName) => handleUpdateStatus(candidate._id, status, email, jTitle, cName)}
                             getScoreColor={getScoreColor}
                             getStatusBadge={getStatusBadge}
                             getTagBadge={getTagBadge}

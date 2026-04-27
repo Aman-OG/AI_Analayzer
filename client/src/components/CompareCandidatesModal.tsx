@@ -1,4 +1,5 @@
 import { X, Trophy, AlertTriangle, Briefcase, Zap } from 'lucide-react';
+import { useEffect } from 'react';
 import type { Resume } from '../types';
 
 interface CompareCandidatesModalProps {
@@ -10,6 +11,18 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
     if (candidates.length !== 2) return null;
 
     const [c1, c2] = candidates;
+
+    // Handle Escape key to close modal
+    useEffect(() => {
+        const handleEscapeKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscapeKey);
+        return () => document.removeEventListener('keydown', handleEscapeKey);
+    }, [onClose]);
 
     const renderScoreRow = (label: string, score1: number | undefined, score2: number | undefined) => (
         <div className="grid grid-cols-3 py-4 border-b border-slate-200 dark:border-white/10 items-center">
@@ -28,11 +41,11 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
     );
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="glass-card w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" role="presentation">
+            <div className="glass-card w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
                 {/* Header */}
                 <div className="p-6 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-white dark:bg-slate-900/50 backdrop-blur-md">
-                    <h2 className="text-2xl font-black flex items-center gap-3 text-foreground tracking-tight">
+                    <h2 id="compare-modal-title" className="text-2xl font-black flex items-center gap-3 text-foreground tracking-tight">
                         <div className="p-2 rounded-xl bg-primary/10 text-primary">
                             <Zap className="w-6 h-6 fill-primary/20" />
                         </div>
@@ -40,7 +53,9 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-2.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-2xl transition-all duration-200 text-muted-foreground hover:text-foreground active:scale-95"
+                        className="p-2.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-2xl transition-all duration-200 text-muted-foreground hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
+                        aria-label="Close comparison modal"
+                        title="Close (Esc)"
                     >
                         <X className="w-6 h-6" />
                     </button>
@@ -56,7 +71,7 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
                             {/* Candidate 1 Header */}
                             <div className="text-center relative group">
                                 {c1.score !== undefined && c2.score !== undefined && c1.score >= c2.score && (
-                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_4px_20px_rgba(245,158,11,0.4)] z-20 animate-bounce">
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_4px_20px_rgba(245,158,11,0.4)] z-20 animate-bounce">
                                         Best Fit
                                     </div>
                                 )}
@@ -77,7 +92,7 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
                             {/* Candidate 2 Header */}
                             <div className="text-center relative group">
                                 {c1.score !== undefined && c2.score !== undefined && c2.score > c1.score && (
-                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-emerald-400 to-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_4px_20px_rgba(16,185,129,0.4)] z-20 animate-bounce">
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_4px_20px_rgba(16,185,129,0.4)] z-20 animate-bounce">
                                         Best Fit
                                     </div>
                                 )}
@@ -99,9 +114,9 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
                         {/* Scoring Section */}
                         <div className="space-y-1 mb-10 bg-slate-50/50 dark:bg-white/[0.02] p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/[0.05]">
                             {renderScoreRow('Fit Score', c1.score, c2.score)}
-                            {renderScoreRow('Technical Fit', (c1.geminiAnalysis || c1.analysis)?.technicalFit, (c2.geminiAnalysis || c2.analysis)?.technicalFit)}
-                            {renderScoreRow('Experience', (c1.geminiAnalysis || c1.analysis)?.experienceMatch, (c2.geminiAnalysis || c2.analysis)?.experienceMatch)}
-                            {renderScoreRow('Education', (c1.geminiAnalysis || c1.analysis)?.educationLevel, (c2.geminiAnalysis || c2.analysis)?.educationLevel)}
+                            {renderScoreRow('Technical Fit', (c1.aiAnalysis || c1.analysis)?.technicalFit, (c2.aiAnalysis || c2.analysis)?.technicalFit)}
+                            {renderScoreRow('Experience', (c1.aiAnalysis || c1.analysis)?.experienceMatch, (c2.aiAnalysis || c2.analysis)?.experienceMatch)}
+                            {renderScoreRow('Education', (c1.aiAnalysis || c1.analysis)?.educationLevel, (c2.aiAnalysis || c2.analysis)?.educationLevel)}
                         </div>
 
                         {/* Details Section */}
@@ -130,22 +145,22 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
                             {/* Candidate 1 Data */}
                             <div className="space-y-16">
                                 <div className="text-sm font-bold text-foreground">
-                                    <span className="text-2xl font-black text-primary mr-2">{(c1.geminiAnalysis || c1.analysis)?.yearsExperience || 'N/A'}</span>
+                                    <span className="text-2xl font-black text-primary mr-2">{(c1.aiAnalysis || c1.analysis)?.yearsExperience || 'N/A'}</span>
                                     <span className="text-muted-foreground uppercase text-[10px] tracking-widest">Years</span>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {(c1.geminiAnalysis?.skills || c1.analysis?.skills || []).slice(0, 10).map(skill => (
+                                    {(c1.aiAnalysis?.skills || c1.analysis?.skills || []).slice(0, 10).map(skill => (
                                         <span key={skill} className="px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-[10px] font-bold text-slate-600 dark:text-slate-300 shadow-sm">{skill}</span>
                                     ))}
                                 </div>
                                 <div className="space-y-3">
-                                    {(c1.geminiAnalysis?.warnings || c1.analysis?.warnings || []).map((w, i) => (
+                                    {(c1.aiAnalysis?.warnings || c1.analysis?.warnings || []).map((w, i) => (
                                         <div key={i} className="flex gap-3 p-3 rounded-2xl bg-red-500/5 border border-red-500/10 items-start">
                                             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                             <p className="text-[11px] text-red-600/80 dark:text-red-400 font-medium leading-tight">{w}</p>
                                         </div>
                                     ))}
-                                    {(c1.geminiAnalysis?.warnings || c1.analysis?.warnings || []).length === 0 && (
+                                    {(c1.aiAnalysis?.warnings || c1.analysis?.warnings || []).length === 0 && (
                                         <p className="text-[11px] text-slate-400 italic">No critical gaps identified</p>
                                     )}
                                 </div>
@@ -154,22 +169,22 @@ export function CompareCandidatesModal({ candidates, onClose }: CompareCandidate
                             {/* Candidate 2 Data */}
                             <div className="space-y-16">
                                 <div className="text-sm font-bold text-foreground">
-                                    <span className="text-2xl font-black text-emerald-500 mr-2">{(c2.geminiAnalysis || c2.analysis)?.yearsExperience || 'N/A'}</span>
+                                    <span className="text-2xl font-black text-emerald-500 mr-2">{(c2.aiAnalysis || c2.analysis)?.yearsExperience || 'N/A'}</span>
                                     <span className="text-muted-foreground uppercase text-[10px] tracking-widest">Years</span>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {(c2.geminiAnalysis?.skills || c2.analysis?.skills || []).slice(0, 10).map(skill => (
+                                    {(c2.aiAnalysis?.skills || c2.analysis?.skills || []).slice(0, 10).map(skill => (
                                         <span key={skill} className="px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-[10px] font-bold text-slate-600 dark:text-slate-300 shadow-sm">{skill}</span>
                                     ))}
                                 </div>
                                 <div className="space-y-3">
-                                    {(c2.geminiAnalysis?.warnings || c2.analysis?.warnings || []).map((w, i) => (
+                                    {(c2.aiAnalysis?.warnings || c2.analysis?.warnings || []).map((w, i) => (
                                         <div key={i} className="flex gap-3 p-3 rounded-2xl bg-red-500/5 border border-red-500/10 items-start">
                                             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                             <p className="text-[11px] text-red-600/80 dark:text-red-400 font-medium leading-tight">{w}</p>
                                         </div>
                                     ))}
-                                    {(c2.geminiAnalysis?.warnings || c2.analysis?.warnings || []).length === 0 && (
+                                    {(c2.aiAnalysis?.warnings || c2.analysis?.warnings || []).length === 0 && (
                                         <p className="text-[11px] text-slate-400 italic">No critical gaps identified</p>
                                     )}
                                 </div>

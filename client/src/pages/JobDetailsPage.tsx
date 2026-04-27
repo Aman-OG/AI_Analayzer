@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { CandidateList } from '../components/CandidateList';
+import { KanbanBoard } from '../components/kanban/KanbanBoard';
+import { CandidateChatPanel } from '../components/CandidateChatPanel';
+import { useResumePolling } from '../hooks/useResumePolling';
 import { jobService, resumeService } from '../services';
 import {
     Briefcase,
@@ -12,9 +15,12 @@ import {
     Upload,
     Edit3,
     FileText,
-    X
+    X,
+    LayoutList,
+    Kanban
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export function JobDetailsPage() {
     const { id } = useParams<{ id: string }>();
@@ -24,6 +30,14 @@ export function JobDetailsPage() {
     const [uploading, setUploading] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const prefersReducedMotion = useReducedMotion();
+    const [viewMode, setViewMode] = useState<'list' | 'board'>(() => {
+        return (localStorage.getItem('candidateViewMode') as 'list' | 'board') || 'list';
+    });
+    const [isChatOpen, setIsChatOpen] = useState(false);
+
+    // Kanban board needs direct access to candidates
+    const { candidates: kanbanCandidates, setCandidates: setKanbanCandidates } = useResumePolling(id || '', refreshTrigger);
 
     useEffect(() => {
         if (id) {
@@ -140,41 +154,47 @@ export function JobDetailsPage() {
     if (!job) return null;
 
     return (
-        <div className="space-y-8 animate-fade-in">
-            {/* Header / Breadcrumbs */}
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                <div className="space-y-4 flex-1">
+        <div className={`space-y-8 relative ${prefersReducedMotion ? '' : 'animate-fade-in'}`}>
+            {/* Ambient Glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/20 dark:bg-primary/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+
+            {/* Hero Section */}
+            <div className="relative p-8 md:p-12 rounded-3xl bg-slate-900 dark:bg-slate-800 overflow-hidden shadow-lg">
+                {/* Subtle overlay instead of gradient */}
+                <div className="absolute inset-0 bg-black/10 dark:bg-black/20 pointer-events-none" />
+                
+                <div className={`relative z-10 space-y-4 ${prefersReducedMotion ? '' : 'animate-slide-up animate-stagger-1'}`}>
                     <div className="flex items-center gap-3">
                         <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => navigate('/jobs')}
-                            className="rounded-full hover:bg-white dark:hover:bg-slate-900 shadow-sm"
+                            className="rounded-full hover:bg-white/20 dark:hover:bg-white/10 shadow-sm text-white hover:text-white"
                         >
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white leading-none mb-1">{job.title}</h1>
+                        <h1 className="text-4xl md:text-5xl font-black text-white leading-tight">{job.title}</h1>
                         <Link to={`/jobs/edit/${id}`}>
-                            <Button variant="ghost" size="sm" className="ml-2 rounded-xl text-slate-500 hover:text-blue-600 hover:bg-blue-50 font-bold gap-2">
+                            <Button variant="ghost" size="sm" className="ml-2 rounded-xl text-white/80 hover:text-white hover:bg-white/20 font-bold gap-2 transition-all">
                                 <Edit3 className="h-4 w-4" />
                                 Edit
                             </Button>
                         </Link>
                     </div>
-                    <p className="text-slate-500 text-sm flex items-center gap-2">
-                        <Briefcase className="h-3 w-3" />
+                    <p className="text-white/90 text-lg flex items-center gap-2">
+                        <Briefcase className="h-5 w-5" />
                         {job.company || 'Direct Hiring'}
-                        <span className="text-slate-300">•</span>
-                        <Calendar className="h-3 w-3" />
+                        <span className="text-white/50">•</span>
+                        <Calendar className="h-5 w-5" />
                         Posted {new Date(job.createdAt).toLocaleDateString()}
                     </p>
                 </div>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
                 {/* Left Column: Job Info */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="p-8 glass-card space-y-6">
+                    <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg space-y-6 animate-slide-up animate-stagger-2">
                         <section className="space-y-3">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Description</h3>
                             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">
@@ -210,12 +230,12 @@ export function JobDetailsPage() {
                     </div>
 
                     {/* Quick Upload Action */}
-                    <div className="p-8 rounded-3xl bg-slate-900 dark:bg-slate-900 border border-slate-800 shadow-2xl text-white space-y-6 relative overflow-hidden group">
-                        <Sparkles className="absolute -right-4 -top-4 h-24 w-24 text-white/10 group-hover:scale-110 transition-transform" />
+                    <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl text-slate-900 dark:text-white space-y-6 relative overflow-hidden group transition-all hover:shadow-2xl hover:shadow-blue-500/10 animate-slide-up animate-stagger-3">
+                        <Sparkles className="absolute -right-4 -top-4 h-24 w-24 text-blue-600/5 dark:text-white/10 group-hover:scale-110 transition-transform" />
 
                         <div className="relative z-10">
                             <h3 className="text-xl font-bold mb-2">New Applicant?</h3>
-                            <p className="text-blue-100 text-sm mb-6">Upload a resume to instantly see how they rank against your requirements.</p>
+                            <p className="text-slate-500 dark:text-blue-100 text-sm mb-6">Upload a resume to instantly see how they rank against your requirements.</p>
 
                             <div className="space-y-3">
                                 <label
@@ -223,27 +243,27 @@ export function JobDetailsPage() {
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
                                     className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 ${isDragging
-                                        ? 'bg-primary/20 border-primary shadow-inner scale-[0.98]'
-                                        : 'border-slate-700 hover:bg-white/5'
+                                        ? 'bg-primary/5 dark:bg-primary/20 border-primary shadow-inner scale-[0.98]'
+                                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5'
                                         }`}
                                 >
                                     <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
-                                        <div className={`p-3 rounded-2xl bg-white/5 mb-3 transition-transform ${isDragging ? 'scale-110' : ''}`}>
+                                        <div className={`p-3 rounded-2xl bg-slate-100 dark:bg-white/5 mb-3 transition-transform ${isDragging ? 'scale-110' : ''}`}>
                                             <Upload className={`w-8 h-8 ${isDragging ? 'text-primary' : 'text-slate-400'}`} />
                                         </div>
                                         {selectedFiles.length > 0 ? (
                                             <div className="space-y-1">
-                                                <p className="text-sm font-bold text-white">
+                                                <p className="text-sm font-bold text-slate-900 dark:text-white">
                                                     {selectedFiles.length} file(s) ready
                                                 </p>
-                                                <p className="text-[10px] text-blue-200 uppercase font-black tracking-widest">Selected</p>
+                                                <p className="text-[10px] text-blue-600 dark:text-blue-200 uppercase font-black tracking-widest">Selected</p>
                                             </div>
                                         ) : (
                                             <div className="space-y-1">
-                                                <p className="text-sm font-bold text-slate-200">
+                                                <p className="text-sm font-bold text-slate-600 dark:text-slate-200">
                                                     {isDragging ? 'Drop them here!' : 'Click or Drop Resumes'}
                                                 </p>
-                                                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">PDF or DOCX</p>
+                                                <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-black tracking-widest">PDF or DOCX</p>
                                             </div>
                                         )}
                                     </div>
@@ -261,16 +281,16 @@ export function JobDetailsPage() {
                                 {selectedFiles.length > 0 && (
                                     <div className="space-y-2 max-h-40 overflow-y-auto px-1">
                                         {selectedFiles.map((file, idx) => (
-                                            <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10 group/file animate-fade-in">
+                                            <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 group/file animate-fade-in">
                                                 <div className="flex items-center gap-2 min-w-0">
-                                                    <div className="p-1.5 rounded-lg bg-white/10 text-white shrink-0">
+                                                    <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-white shrink-0">
                                                         <FileText className="h-3.5 w-3.5" />
                                                     </div>
-                                                    <span className="text-[11px] font-medium text-blue-50 truncate">{file.name}</span>
+                                                    <span className="text-[11px] font-medium text-slate-700 dark:text-blue-50 truncate">{file.name}</span>
                                                 </div>
                                                 <button
                                                     onClick={() => removeFile(idx)}
-                                                    className="p-1 hover:bg-white/10 rounded-md text-white/50 hover:text-white transition-colors"
+                                                    className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-md text-slate-400 dark:text-white/50 hover:text-red-500 dark:hover:text-white transition-colors"
                                                 >
                                                     <X className="h-3.5 w-3.5" />
                                                 </button>
@@ -280,18 +300,18 @@ export function JobDetailsPage() {
                                 )}
 
                                 <Button
-                                    className="w-full h-14 rounded-2xl bg-primary text-white hover:bg-primary/90 font-black text-base shadow-lg transition-transform hover:-translate-y-1"
+                                    className="w-full min-h-[3.5rem] h-auto py-3 px-4 rounded-2xl bg-primary text-white hover:bg-primary/90 font-black text-sm lg:text-base shadow-lg transition-all hover:-translate-y-1"
                                     onClick={handleUpload}
                                     disabled={selectedFiles.length === 0 || uploading}
                                 >
                                     {uploading ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-4 w-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+                                        <div className="flex items-center justify-center flex-wrap gap-2 text-center">
+                                            <div className="h-4 w-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin shrink-0" />
                                             <span>Analyzing {selectedFiles.length} files...</span>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2">
-                                            <Sparkles className="h-5 w-5" />
+                                        <div className="flex items-center justify-center flex-wrap gap-2 text-center">
+                                            <Sparkles className="h-5 w-5 shrink-0" />
                                             <span>Rank Candidates ({selectedFiles.length})</span>
                                         </div>
                                     )}
@@ -302,22 +322,77 @@ export function JobDetailsPage() {
                 </div>
 
                 {/* Right Column: Candidates */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-3 space-y-6 animate-slide-up animate-stagger-4 w-full overflow-hidden">
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <Users className="h-6 w-6 text-blue-600" />
                             Ranked Candidates
                         </h2>
+                        {/* View Toggle */}
+                        <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-100/60 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/30">
+                            <button
+                                onClick={() => { setViewMode('list'); localStorage.setItem('candidateViewMode', 'list'); }}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+                                    viewMode === 'list'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                <LayoutList className="h-3.5 w-3.5" />
+                                List
+                            </button>
+                            <button
+                                onClick={() => { setViewMode('board'); localStorage.setItem('candidateViewMode', 'board'); }}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+                                    viewMode === 'board'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                <Kanban className="h-3.5 w-3.5" />
+                                Board
+                            </button>
+                        </div>
                     </div>
 
-                    <CandidateList
-                        jobId={id!}
-                        jobTitle={job.title}
-                        company={job.company}
-                        refreshTrigger={refreshTrigger}
-                    />
+                    {viewMode === 'list' ? (
+                        <CandidateList
+                            jobId={id!}
+                            jobTitle={job.title}
+                            company={job.company}
+                            refreshTrigger={refreshTrigger}
+                        />
+                    ) : (
+                        <KanbanBoard
+                            candidates={kanbanCandidates}
+                            setCandidates={setKanbanCandidates}
+                            jobTitle={job.title}
+                            company={job.company}
+                        />
+                    )}
                 </div>
             </div>
+
+            {/* AI Chat Toggle Button */}
+            <button
+                onClick={() => setIsChatOpen(true)}
+                className="fixed bottom-8 right-8 z-40 p-4 rounded-full bg-blue-600 text-white shadow-2xl shadow-blue-600/30 hover:bg-blue-700 hover:scale-110 transition-all duration-300 flex items-center gap-3 group"
+            >
+                <div className="relative">
+                    <Sparkles className="h-6 w-6" />
+                    <div className="absolute -top-1 -right-1 h-3 w-3 bg-rose-500 rounded-full border-2 border-blue-600 animate-pulse" />
+                </div>
+                <span className="font-black text-sm pr-2">AI Chat Assistant</span>
+            </button>
+
+            {/* Slide-out AI Chat Panel */}
+            <CandidateChatPanel 
+                jobId={job._id} 
+                jobTitle={job.title} 
+                isOpen={isChatOpen} 
+                onClose={() => setIsChatOpen(false)} 
+            />
+
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { X, Sparkles, Download, Copy, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
+import { useEffect } from 'react';
 
 interface InterviewGuideModalProps {
     guide: string;
@@ -12,6 +13,18 @@ interface InterviewGuideModalProps {
 
 export function InterviewGuideModal({ guide, jobTitle, onClose }: InterviewGuideModalProps) {
     const [copied, setCopied] = React.useState(false);
+
+    // Handle Escape key to close modal
+    useEffect(() => {
+        const handleEscapeKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscapeKey);
+        return () => document.removeEventListener('keydown', handleEscapeKey);
+    }, [onClose]);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(guide);
@@ -73,8 +86,8 @@ export function InterviewGuideModal({ guide, jobTitle, onClose }: InterviewGuide
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="glass-card w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" role="presentation">
+            <div className="glass-card w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300" role="dialog" aria-modal="true" aria-labelledby="interview-guide-title">
                 {/* Header */}
                 <div className="p-6 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
                     <div className="flex items-center gap-3">
@@ -82,7 +95,7 @@ export function InterviewGuideModal({ guide, jobTitle, onClose }: InterviewGuide
                             <Sparkles className="w-6 h-6 fill-primary/20" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-foreground tracking-tight">AI Interview Guide</h2>
+                            <h2 id="interview-guide-title" className="text-xl font-black text-foreground tracking-tight">AI Interview Guide</h2>
                             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{jobTitle}</p>
                         </div>
                     </div>
@@ -92,6 +105,7 @@ export function InterviewGuideModal({ guide, jobTitle, onClose }: InterviewGuide
                             size="sm"
                             onClick={handleCopy}
                             className="h-9 px-3 rounded-xl flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"
+                            ariaLabel={copied ? 'Copied to clipboard' : 'Copy interview guide'}
                         >
                             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                             <span className="text-xs font-bold">Copy</span>
@@ -101,13 +115,16 @@ export function InterviewGuideModal({ guide, jobTitle, onClose }: InterviewGuide
                             size="sm"
                             onClick={handleDownloadPDF}
                             className="h-9 px-4 rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95"
+                            ariaLabel="Download interview guide as PDF"
                         >
                             <Download className="w-4 h-4" />
                             <span className="text-xs font-bold">Download PDF</span>
                         </Button>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all ml-2"
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all ml-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
+                            aria-label="Close interview guide modal"
+                            title="Close (Esc)"
                         >
                             <X className="w-6 h-6 text-muted-foreground" />
                         </button>

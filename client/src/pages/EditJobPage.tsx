@@ -6,6 +6,7 @@ import { Textarea } from '../components/ui/textarea';
 import { jobService } from '../services';
 import { toast } from 'sonner';
 import { ArrowLeft, X, Save, Sparkles, Plus } from 'lucide-react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export function EditJobPage() {
     const { id } = useParams<{ id: string }>();
@@ -18,6 +19,7 @@ export function EditJobPage() {
     const [focusInput, setFocusInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
+    const prefersReducedMotion = useReducedMotion();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -96,9 +98,9 @@ export function EditJobPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+        <div className={`max-w-4xl mx-auto space-y-8 ${prefersReducedMotion ? '' : 'animate-fade-in'}`}>
             {/* Header */}
-            <div className="flex items-center gap-4">
+            <div className={`flex items-center gap-4 ${prefersReducedMotion ? '' : 'animate-slide-up animate-stagger-1'}`}>
                 <Button
                     variant="ghost"
                     size="icon"
@@ -113,11 +115,24 @@ export function EditJobPage() {
                 </div>
             </div>
 
+            {/* Progress Indicator */}
+            <div className={`space-y-3 ${prefersReducedMotion ? '' : 'animate-slide-up animate-stagger-2'}`}>
+                <div className="flex items-center justify-between text-sm">
+                    <span className="font-bold text-slate-900 dark:text-white">Editing Job Details</span>
+                    <span className="text-slate-500">All changes saved automatically</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-primary w-full" />
+                </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8 group/form">
                 {/* Main Details */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="p-8 rounded-3xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-                        <div className="space-y-2">
+                    <div className={`p-8 rounded-3xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 ${prefersReducedMotion ? '' : 'animate-slide-up animate-stagger-3'}`}>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Job Information</h2>
+                        
+                        <div className={`space-y-2 ${prefersReducedMotion ? '' : 'animate-slide-up animate-stagger-4'}`}>
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Job Title</label>
                             <Input
                                 placeholder="e.g. Senior Software Engineer"
@@ -128,7 +143,7 @@ export function EditJobPage() {
                             />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className={`space-y-2 ${prefersReducedMotion ? '' : 'animate-slide-up animate-stagger-5'}`}>
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Company</label>
                             <Input
                                 placeholder="e.g. Acme Corp"
@@ -138,7 +153,7 @@ export function EditJobPage() {
                             />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className={`space-y-2 ${prefersReducedMotion ? '' : 'animate-slide-up animate-stagger-6'}`}>
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Detailed Description</label>
                             <Textarea
                                 placeholder="Paste the full job description here..."
@@ -152,9 +167,9 @@ export function EditJobPage() {
                 </div>
 
                 {/* Sidebar Requirements */}
-                <div className="space-y-6">
+                <div className={`space-y-6 ${prefersReducedMotion ? '' : 'animate-slide-up animate-stagger-4'}`}>
                     {/* Skills Tagging */}
-                    <div className="p-6 rounded-3xl bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50 space-y-4">
+                    <div className="p-6 rounded-3xl bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50 space-y-4 sticky top-20">
                         <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold mb-2">
                             <Sparkles className="h-4 w-4" />
                             <span>Selection Criteria</span>
@@ -181,8 +196,8 @@ export function EditJobPage() {
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                    {mustHaveSkills.map(skill => (
-                                        <div key={skill} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-slate-900 border text-sm font-medium">
+                                    {mustHaveSkills.map((skill, idx) => (
+                                        <div key={skill} className={`flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-slate-900 border text-sm font-medium ${prefersReducedMotion ? '' : 'animate-fade-in'}`} style={{ animationDelay: prefersReducedMotion ? '0ms' : `${idx * 50}ms` }}>
                                             {skill}
                                             <button type="button" onClick={() => removeSkill(skill)} className="text-slate-400 hover:text-red-500">
                                                 <X className="h-3 w-3" />
@@ -212,8 +227,8 @@ export function EditJobPage() {
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                    {focusAreas.map(area => (
-                                        <div key={area} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/50 dark:bg-slate-900/50 border text-sm font-medium">
+                                    {focusAreas.map((area, idx) => (
+                                        <div key={area} className={`flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/50 dark:bg-slate-900/50 border text-sm font-medium ${prefersReducedMotion ? '' : 'animate-fade-in'}`} style={{ animationDelay: prefersReducedMotion ? '0ms' : `${idx * 50}ms` }}>
                                             {area}
                                             <button type="button" onClick={() => removeFocusArea(area)} className="text-slate-400 hover:text-red-500">
                                                 <X className="h-3 w-3" />
@@ -225,7 +240,7 @@ export function EditJobPage() {
                         </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className={`space-y-3 ${prefersReducedMotion ? '' : 'animate-slide-up animate-stagger-5'}`}>
                         <Button type="submit" disabled={loading} className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-lg font-bold shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-1">
                             {loading ? (
                                 <div className="flex items-center gap-2">
@@ -242,7 +257,7 @@ export function EditJobPage() {
                         <Button
                             type="button"
                             variant="ghost"
-                            className="w-full text-slate-500 font-medium"
+                            className="w-full text-slate-500 font-medium transition-all hover:-translate-y-0.5"
                             onClick={() => navigate(`/jobs/${id}`)}
                         >
                             Discard Changes

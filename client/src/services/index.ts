@@ -1,5 +1,8 @@
 import api from './api';
 import type { JobDescription, Resume } from '../types';
+import chatService from './chatService';
+
+export { chatService };
 
 export const jobService = {
     // Get all jobs
@@ -67,10 +70,10 @@ export const resumeService = {
     },
 
     // Update candidate status
-    async updateStatus(id: string, tagStatus: string) {
+    async updateStatus(id: string, tagStatus: string, candidateEmail?: string | null, jobTitle?: string, companyName?: string) {
         const response = await api.patch<{ success: boolean; candidate: Resume }>(
             `/resumes/${id}/status`,
-            { tagStatus }
+            { tagStatus, candidateEmail, jobTitle, companyName }
         );
         return response.data;
     },
@@ -99,5 +102,48 @@ export const resumeService = {
             { jobId, candidateIds }
         );
         return response.data;
+    },
+};
+
+export const analyticsService = {
+    // Get dashboard metrics
+    async getDashboardMetrics() {
+        const response = await api.get<{
+            success: boolean;
+            metrics: {
+                totalCandidates: number;
+                averageScore: number;
+                topPerformersPercent: number;
+                activeJobs: number;
+                pipelineStages: {
+                    applied: number;
+                    shortlisted: number;
+                    interviewed: number;
+                    offered: number;
+                    rejected: number;
+                };
+                scoreDistribution: number[];
+                jobBreakdown: Array<{
+                    jobId: string;
+                    title: string;
+                    company: string;
+                    candidateCount: number;
+                    avgScore: number;
+                    topScore: number;
+                    stages: {
+                        applied: number;
+                        shortlisted: number;
+                        interviewed: number;
+                        offered: number;
+                        rejected: number;
+                    };
+                }>;
+                uploadTimeline: Array<{
+                    date: string;
+                    count: number;
+                }>;
+            };
+        }>('/analytics/dashboard');
+        return response.data.metrics;
     },
 };

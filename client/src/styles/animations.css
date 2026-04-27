@@ -1,0 +1,496 @@
+/* Animation Utility Classes and Definitions */
+
+/* ============================================
+   ENTRANCE ANIMATIONS
+   ============================================ */
+
+/* Slide Up Animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+.animate-slide-up-fast {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+.animate-slide-up-slow {
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-fade-in-fast {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-fade-in-slow {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Scale In Animation */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+.animate-scale-in-fast {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+.animate-scale-in-slow {
+  animation: scaleIn 0.4s ease-out forwards;
+}
+
+/* ============================================
+   EXIT ANIMATIONS
+   ============================================ */
+
+/* Slide Out Animation */
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+.animate-slide-out {
+  animation: slideOut 0.3s ease-in forwards;
+}
+
+.animate-slide-out-fast {
+  animation: slideOut 0.2s ease-in forwards;
+}
+
+.animate-slide-out-slow {
+  animation: slideOut 0.4s ease-in forwards;
+}
+
+/* Fade Out Animation */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.3s ease-in forwards;
+}
+
+.animate-fade-out-fast {
+  animation: fadeOut 0.2s ease-in forwards;
+}
+
+.animate-fade-out-slow {
+  animation: fadeOut 0.4s ease-in forwards;
+}
+
+/* ============================================
+   LOADING ANIMATIONS
+   ============================================ */
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.5) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  background-size: 1000px 100%;
+}
+
+/* Pulse Glow Animation */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Pulse Animation (opacity) */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-opacity {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ============================================
+   MICRO-INTERACTION ANIMATIONS
+   ============================================ */
+
+/* Rotate Animation */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-rotate {
+  animation: rotate 1s linear infinite;
+}
+
+.animate-rotate-fast {
+  animation: rotate 0.5s linear infinite;
+}
+
+.animate-rotate-slow {
+  animation: rotate 2s linear infinite;
+}
+
+/* Rotate 180 Animation */
+@keyframes rotate180 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(180deg);
+  }
+}
+
+.animate-rotate-180 {
+  animation: rotate180 0.3s ease-out forwards;
+}
+
+/* Scale Animation */
+@keyframes scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-scale {
+  animation: scale 0.3s ease-in-out forwards;
+}
+
+.animate-scale-pulse {
+  animation: scale 0.6s ease-in-out infinite;
+}
+
+/* Color Change Animation */
+@keyframes colorChange {
+  0% {
+    color: inherit;
+  }
+  50% {
+    color: hsl(var(--primary));
+  }
+  100% {
+    color: inherit;
+  }
+}
+
+.animate-color-change {
+  animation: colorChange 0.3s ease-in-out forwards;
+}
+
+/* ============================================
+   STAGGER ANIMATIONS
+   ============================================ */
+
+.animate-stagger-1 {
+  animation-delay: 0ms;
+}
+
+.animate-stagger-2 {
+  animation-delay: 100ms;
+}
+
+.animate-stagger-3 {
+  animation-delay: 200ms;
+}
+
+.animate-stagger-4 {
+  animation-delay: 300ms;
+}
+
+.animate-stagger-5 {
+  animation-delay: 400ms;
+}
+
+.animate-stagger-6 {
+  animation-delay: 500ms;
+}
+
+.animate-stagger-7 {
+  animation-delay: 600ms;
+}
+
+.animate-stagger-8 {
+  animation-delay: 700ms;
+}
+
+/* ============================================
+   COMBINED ANIMATIONS
+   ============================================ */
+
+/* Slide Up with Stagger */
+.animate-slide-up-stagger {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+/* Fade In with Stagger */
+.animate-fade-in-stagger {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Scale In with Stagger */
+.animate-scale-in-stagger {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+/* ============================================
+   UTILITY CLASSES FOR ANIMATION CONTROL
+   ============================================ */
+
+/* Disable animations for prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Animation will-change hints */
+.will-animate-transform {
+  will-change: transform;
+}
+
+.will-animate-opacity {
+  will-change: opacity;
+}
+
+.will-animate-all {
+  will-change: transform, opacity;
+}
+
+/* ============================================
+   ANIMATION TIMING UTILITIES
+   ============================================ */
+
+/* Fast animations (100-200ms) */
+.animate-duration-fast {
+  animation-duration: 150ms;
+}
+
+/* Normal animations (300-400ms) */
+.animate-duration-normal {
+  animation-duration: 350ms;
+}
+
+/* Slow animations (500-800ms) */
+.animate-duration-slow {
+  animation-duration: 600ms;
+}
+
+/* ============================================
+   ANIMATION EASING UTILITIES
+   ============================================ */
+
+.animate-ease-out {
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-ease-in-out {
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-ease-in {
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* ============================================
+   ANIMATION FILL MODES
+   ============================================ */
+
+.animate-fill-forwards {
+  animation-fill-mode: forwards;
+}
+
+.animate-fill-backwards {
+  animation-fill-mode: backwards;
+}
+
+.animate-fill-both {
+  animation-fill-mode: both;
+}
+
+/* ============================================
+   ANIMATION DIRECTION
+   ============================================ */
+
+.animate-direction-reverse {
+  animation-direction: reverse;
+}
+
+.animate-direction-alternate {
+  animation-direction: alternate;
+}
+
+.animate-direction-alternate-reverse {
+  animation-direction: alternate-reverse;
+}
+
+/* ============================================
+   ANIMATION ITERATION
+   ============================================ */
+
+.animate-iteration-once {
+  animation-iteration-count: 1;
+}
+
+.animate-iteration-infinite {
+  animation-iteration-count: infinite;
+}
+
+/* ============================================
+   ANIMATION PLAY STATE
+   ============================================ */
+
+.animate-play {
+  animation-play-state: running;
+}
+
+.animate-pause {
+  animation-play-state: paused;
+}
+
+/* ============================================
+   LAYOUT SHIFT PREVENTION
+   ============================================ */
+
+/* Prevent layout shifts during animations */
+.no-layout-shift {
+  contain: layout style paint;
+}
+
+/* GPU acceleration for smooth animations */
+.gpu-accelerate {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ============================================
+   ANIMATION COMPOSITION
+   ============================================ */
+
+/* Slide Up + Fade In */
+@keyframes slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up-fade-in {
+  animation: slideUpFadeIn 0.5s ease-out forwards;
+}
+
+/* Scale In + Fade In */
+@keyframes scaleInFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in-fade-in {
+  animation: scaleInFadeIn 0.3s ease-out forwards;
+}
+
+/* Slide Out + Fade Out */
+@keyframes slideOutFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+.animate-slide-out-fade-out {
+  animation: slideOutFadeOut 0.3s ease-in forwards;
+}

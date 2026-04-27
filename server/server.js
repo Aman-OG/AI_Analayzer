@@ -1,12 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const connectDB = require('./config/db');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 const resumeRoutes = require('./routes/resumeRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const { generalLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -32,10 +34,15 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Apply general rate limiting to all requests
+app.use(generalLimiter);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/resumes', resumeRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -107,10 +114,5 @@ const startServer = (port) => {
     process.on('SIGINT', shutDown);
 };
 
-// Connect to MongoDB and start server
-connectDB().then(() => {
-    startServer(PORT);
-}).catch(err => {
-    console.error('❌ Failed to connect to database. Server shutting down...');
-    process.exit(1);
-});
+// Start server
+startServer(PORT);
